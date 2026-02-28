@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:support.claude.com)",
+      "WebFetch(domain:ai-sdk.dev)",
+      "Bash(test -d \"node_modules/@ai-sdk/mcp\")"
+    ]
+  }
+}
