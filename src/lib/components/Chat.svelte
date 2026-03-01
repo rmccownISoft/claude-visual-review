@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Chat, type UIMessage } from '@ai-sdk/svelte'
 	import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls, isToolUIPart, type LanguageModelUsage } from 'ai'
-	import type { ToolImplementations } from '$lib/chatTypes'
 
 	type ChatMetadata = {
 		usage?: LanguageModelUsage
@@ -10,7 +9,7 @@
 	type ChatMessage = UIMessage<ChatMetadata>
 
 	type Props = {
-		toolImplementations: ToolImplementations
+		toolImplementations: any
 	}
 
 	let { toolImplementations }: Props = $props()
