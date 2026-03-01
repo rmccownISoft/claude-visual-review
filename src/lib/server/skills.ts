@@ -17,7 +17,7 @@ export type Skill = {
 
 // Recursively collect all .md files in a dir, excluding one filename
 // It does this? ['.../references/ai-gateway.md', '.../references/common-errors.md', '.../references/devtools.md', '.../references/type-safe-agents.md']
-
+// TODO: add a test for this
 async function collectMdFiles(dir: string, exclude: string): Promise<string[]> {
     const entries = await readdir(dir, { withFileTypes: true })
     const files: string[] = []
