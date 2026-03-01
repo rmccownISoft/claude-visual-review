@@ -9,8 +9,8 @@ import {
 } from 'ai'
 import { z } from 'zod'
 import { env } from '$env/dynamic/private'
-import { generateRunId, saveRun, type EvalRun, type RunSummary } from '$lib/server/runs'
-import type { Skill } from '$lib/server/skills'
+import { generateRunId, saveRun } from '$lib/server/runs'
+import type { RunSummary, Skill } from '$lib/types'
 
 const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY })
 
@@ -80,8 +80,17 @@ export async function POST({ request }) {
 			{ status: 502, headers: { 'Content-Type': 'application/json' } }
 		)
 	}
-
-    const mcpTools = await mcpClient.tools()
+	
+	let mcpTools: Awaited<ReturnType<typeof mcpClient.tools>>
+	try {
+	    mcpTools = await mcpClient.tools()
+	} catch (err) {
+	    await mcpClient.close()
+	    return new Response(
+	        JSON.stringify({ error: `Failed to load MCP tools: ${err instanceof Error ? err.message : String(err)}` }),
+	        { status: 502, headers: { 'Content-Type': 'application/json' } }
+	    )
+	}
 
     // Accumulate per-step stats to build the summary in onFinish
     let toolCallCount = 0
