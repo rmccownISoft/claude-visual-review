@@ -85,12 +85,18 @@
                             }
                         }
                     } catch {}
+                } else if (line.startsWith('3:')) {
+                    try { runError = JSON.parse(line.slice(2)) } catch {} // for midstream errors from AI SDK
                 }
             }
         }
 
         running = false
-        if (capturedRunId) await goto(`/runs/${capturedRunId}`)
+        if (capturedRunId) {
+            await goto(`/runs/${capturedRunId}`)
+        } else if (!runError) {
+            runError = 'Run failed — server did not return a run ID.'
+        }
     }
 </script>
 
