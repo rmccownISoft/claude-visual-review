@@ -1,6 +1,8 @@
-import { readFile, readdir } from 'fs/promises'
-import { join, relative } from 'path'
+import { readFile, readdir, rm, mkdir, writeFile } from 'fs/promises'
+import { dirname, join, relative } from 'path'
 import type { Skill } from '$lib/types'
+import { unzipSync } from 'fflate'
+
 const SKILLS_DIR = join(process.cwd(), '.agents', 'skills')
 
 
@@ -85,4 +87,42 @@ export function parseSkillFile(rawContent: string): Skill | null {
 	if (!name || !description) return null
 
 	return { name, description, content: body }
+}
+
+/**
+ * Zip file handling for packaged skills
+ */
+export async function deleteSkill(name: string): Promise<void> {
+    await rm(join(SKILLS_DIR, name), { recursive: true, force: true })
+}
+
+export async function installSkillFromZip(buffer: Uint8Array): Promise<string> {
+    const files = unzipSync(buffer) // { [path]: Uint8Array }
+    const paths = Object.keys(files)
+
+    // Determine the single root directory name inside the ZIP
+    const rootDirs = new Set(paths.map(p => p.split('/')[0]).filter(Boolean))
+    if (rootDirs.size !== 1) throw new Error('ZIP must contain exactly one root directory')
+
+    const rootDir = [...rootDirs][0]
+
+    // Validate there's a parseable SKILL.md
+    const skillMdKey = paths.find(p => p === `${rootDir}/SKILL.md`) // check that it has one root dir with valid SKILL.md
+    if (!skillMdKey) throw new Error('ZIP must contain a SKILL.md in the root directory')
+    const skill = parseSkillFile(new TextDecoder().decode(files[skillMdKey]))
+    if (!skill) throw new Error('SKILL.md is missing required name/description frontmatter')
+
+    // Write all files, guarding against path traversal
+    const targetDir = join(SKILLS_DIR, rootDir)
+    for (const [zipPath, data] of Object.entries(files)) {
+        if (zipPath.endsWith('/') || !zipPath.startsWith(`${rootDir}/`)) continue
+        const rel = zipPath.slice(rootDir.length + 1)
+        if (!rel) continue
+        const dest = join(targetDir, rel)
+        if (!dest.startsWith(targetDir)) continue  // path traversal guard
+        await mkdir(dirname(dest), { recursive: true })
+        await writeFile(dest, data)
+    }
+
+    return rootDir
 }
