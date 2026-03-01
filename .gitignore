@@ -25,5 +25,6 @@ vite.config.ts.timestamp-*
 # Stored run results
 data/runs/*.json
 
-# Installed eval skills
-data/skills/
+# Installed eval skills (keep folder, ignore contents)
+data/skills/*
+!data/skills/.gitkeep
