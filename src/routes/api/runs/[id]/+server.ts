@@ -8,9 +8,10 @@ export const GET: RequestHandler = async ({ params }) => {
 	return json(run)
 }
 
+// Replace part instead of update by replacing whole
 export const PATCH: RequestHandler = async ({ params, request }) => {
-	const { notes } = await request.json() as { notes: string }
-	const success = await updateAnnotation(params.id, notes)
+	const { notes, rating } = await request.json() as { notes: string, rating: 'good' | 'bad' | null }
+	const success = await updateAnnotation(params.id, notes, rating)
 	if (!success) throw error(404, 'Run not found') // Let Svelte handle 
 	return json({ ok: true })
 }
