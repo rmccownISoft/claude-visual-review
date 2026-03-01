@@ -9,7 +9,7 @@ import {
 } from 'ai'
 import { z } from 'zod'
 import { env } from '$env/dynamic/private'
-import { generateRunId, saveRun, type EvalRun } from '$lib/server/runs'
+import { generateRunId, saveRun, type EvalRun, type RunSummary } from '$lib/server/runs'
 import type { Skill } from '$lib/server/skills'
 
 const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY })
@@ -41,6 +41,7 @@ You have the following skills available. When a task matches a skill's descripti
 ${skillList}`
 }
 
+// ToolLoopAgent.onFinish fires first (agent done), sets runSummary, closes the MCP client. Then toUIMessageStream.onFinish fires (stream done), and saves the complete run with actual messages.
 export async function POST({ request }) {
     const { config } = await request.json() as {
         config: {
@@ -81,6 +82,8 @@ export async function POST({ request }) {
     // Accumulate per-step stats to build the summary in onFinish
     let toolCallCount = 0
     let skillLoadCount = 0
+
+	let runSummary: RunSummary | null = null
     const agent = new ToolLoopAgent({
     	model: anthropic('claude-sonnet-4-5'),
     	instructions: buildInstructions(config.skills),
@@ -103,40 +106,43 @@ export async function POST({ request }) {
     		// Count MCP tool calls (excluding loadSkill which is tracked separately)
     		toolCallCount += (toolCalls ?? []).filter(tc => tc.toolName !== 'loadSkill').length
     	},
-    	onFinish: async ({ steps, totalUsage }) => {
-    		await mcpClient.close()
-    		const lastStep = steps[steps.length - 1]
-    		const lastTextStep = [...steps].reverse().find(s => s.text)
-    		const run: EvalRun = {
-    			id: runId,
-    			timestamp: new Date().toISOString(),
-    			config,
-    			uiMessages: [],
-    			summary: {
-    				toolCallCount,
-    				skillLoadCount,
-    				stepCount: steps.length,
-    				finishReason: lastStep?.finishReason ?? 'unknown',
-    				finalAnswer: lastTextStep?.text ?? '',
-    				totalInputTokens: totalUsage.inputTokens ?? 0,
-    				totalOutputTokens: totalUsage.outputTokens ?? 0,
-    				durationMs: Date.now() - startTime
-    			},
-    			annotation: { notes: '', savedAt: null, rating: null } // Initializing these null/empty 
-    		}
-    		await saveRun(run)
-    	}
+		onFinish: async ({ steps, totalUsage }) => {
+		    await mcpClient.close()
+		    const lastStep = steps[steps.length - 1]
+		    const lastTextStep = [...steps].reverse().find(s => s.text)
+		    runSummary = {
+		        toolCallCount,
+		        skillLoadCount,
+		        stepCount: steps.length,
+		        finishReason: lastStep?.finishReason ?? 'unknown',
+		        finalAnswer: lastTextStep?.text ?? '',
+		        totalInputTokens: totalUsage.inputTokens ?? 0,
+		        totalOutputTokens: totalUsage.outputTokens ?? 0,
+		        durationMs: Date.now() - startTime
+		    }
+		    // Don't save here — toUIMessageStream.onFinish saves with actual messages
+		}
     })
     
-    const stream = createUIMessageStream({
-    	execute: async ({ writer }) => {
-    		// Send the runId as a custom data part so the client can reference this run
-    		writer.write({ type: 'data-runId', data: { runId } })
-    		// Merge the agent's execution stream
-    		const result = await agent.stream({ prompt: config.prompt })
-    		writer.merge(result.toUIMessageStream())
-    	}
-    })
+	const stream = createUIMessageStream({
+	    execute: async ({ writer }) => {
+	        writer.write({ type: 'data-runId', data: { runId } })
+	        const result = await agent.stream({ prompt: config.prompt })
+	        writer.merge(result.toUIMessageStream({
+	            onFinish: async ({ messages }) => {
+	                if (!runSummary) return
+	                await saveRun({
+	                    id: runId,
+	                    timestamp: new Date().toISOString(),
+	                    config,
+	                    uiMessages: messages,
+	                    summary: runSummary,
+	                    annotation: { rating: null, notes: '', savedAt: null }
+	                })
+	            }
+	        }))
+	    }
+	})
 
 	return createUIMessageStreamResponse({ stream })
 }
