@@ -14,7 +14,7 @@ const SKILLS_DIR = join(process.cwd(), '.agents', 'skills')
 // Recursively collect all .md files in a dir, excluding one filename
 // It does this? ['.../references/ai-gateway.md', '.../references/common-errors.md', '.../references/devtools.md', '.../references/type-safe-agents.md']
 // TODO: add a test for this
-async function collectMdFiles(dir: string, exclude: string): Promise<string[]> {
+export async function collectMdFiles(dir: string, exclude: string): Promise<string[]> {
     const entries = await readdir(dir, { withFileTypes: true })
     const files: string[] = []
     for (const entry of entries) {
@@ -28,16 +28,16 @@ async function collectMdFiles(dir: string, exclude: string): Promise<string[]> {
     return files
 }
 
-export async function listSkills(): Promise<Skill[]> {
+export async function listSkills(dir = SKILLS_DIR): Promise<Skill[]> {
 	// Note: Originally tried to use Awaited but still returned a ts error, never seen that one
-	const entries = await readdir(SKILLS_DIR, { withFileTypes: true }).catch(() => null)
+	const entries = await readdir(dir, { withFileTypes: true }).catch(() => null)
 	if (!entries) return []
 
     const results = await Promise.all(
         entries
             .filter(e => e.isDirectory())
             .map(async (entry) => {
-                const skillDir = join(SKILLS_DIR, entry.name)
+                const skillDir = join(dir, entry.name)
                 let raw: string
                 try {
                     raw = await readFile(join(skillDir, 'SKILL.md'), 'utf-8')
