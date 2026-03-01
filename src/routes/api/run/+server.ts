@@ -42,6 +42,10 @@ ${skillList}`
 }
 
 // ToolLoopAgent.onFinish fires first (agent done), sets runSummary, closes the MCP client. Then toUIMessageStream.onFinish fires (stream done), and saves the complete run with actual messages.
+
+// Closure discussion 
+//The key insight: runSummary isn't passed as an argument to either function — it's just a variable both functions can see because they were both defined in the same outer scope. The JS runtime keeps that variable alive as long as any function references it.
+//The reason we need this at all: you can't call one callback from the other (they're both called by the SDK, not by us), and the SDK doesn't provide a single callback that fires with both the steps AND the final messages together.
 export async function POST({ request }) {
     const { config } = await request.json() as {
         config: {
