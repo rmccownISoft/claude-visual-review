@@ -147,16 +147,6 @@
             <div class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{runError}</div>
         {/if}
 
-        <!-- <div class="space-y-1">
-            <label class="text-sm font-medium text-gray-700" for="url">MCP Server URL</label>
-            <input
-                id="url"
-                bind:value={url}
-                type="url"
-                placeholder="https://..."
-                class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-        </div> -->
         <div class="space-y-1">
             <div class="flex items-center justify-between">
                 <label class="text-sm font-medium text-gray-700" for="url">MCP Server URL</label>
