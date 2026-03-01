@@ -13,6 +13,9 @@
     let running = $state(false)
     let streamOutput = $state('')
     let runError = $state<string | null>(null)
+    // MCP status
+    let checkStatus = $state<{ ok: boolean; message: string } | null>(null)
+    let checking = $state(false)
 
     function toggleSkill(name: string) {
         selectedSkillNames.has(name) ? selectedSkillNames.delete(name) : selectedSkillNames.add(name)
@@ -24,6 +27,29 @@
 
     function removeHeader(i: number) {
         headers = headers.filter((_, j) => j !== i)
+    }
+
+    // Checks that the MCP server can be reached
+    async function checkServer() {
+        checking = true
+        checkStatus = null
+        const mcpHeaders = Object.fromEntries(
+            headers.filter(h => h.key.trim()).map(h => [h.key.trim(), h.value])
+        )
+        try {
+            const res = await fetch('/api/mcp-check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, headers: mcpHeaders })
+            })
+            const data = await res.json()
+            checkStatus = data.ok
+                ? { ok: true, message: `✓ Connected — ${data.toolCount} tool${data.toolCount === 1 ? '' : 's'}` }
+                : { ok: false, message: data.error ?? 'Connection failed' }
+        } catch {
+            checkStatus = { ok: false, message: 'Network error' }
+        }
+        checking = false
     }
 
     async function startRun() {
@@ -121,7 +147,7 @@
             <div class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{runError}</div>
         {/if}
 
-        <div class="space-y-1">
+        <!-- <div class="space-y-1">
             <label class="text-sm font-medium text-gray-700" for="url">MCP Server URL</label>
             <input
                 id="url"
@@ -130,8 +156,33 @@
                 placeholder="https://..."
                 class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+        </div> -->
+        <div class="space-y-1">
+            <div class="flex items-center justify-between">
+                <label class="text-sm font-medium text-gray-700" for="url">MCP Server URL</label>
+                <button
+                    onclick={checkServer}
+                    disabled={!url.trim() || checking}
+                    class="bg-transparent text-xs text-gray-600 font-semibold py-1.5 px-3 border border-gray-300 rounded
+                           enabled:hover:bg-gray-100 enabled:hover:border-gray-400
+                           disabled:cursor-not-allowed disabled:text-gray-400 disabled:border-gray-200"
+                >
+                    {checking ? 'Checking...' : 'Test connection'}
+                </button>
+            </div>
+            <input
+                id="url"
+                bind:value={url}
+                type="url"
+                placeholder="https://..."
+                class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            {#if checkStatus}
+                <p class="text-xs" class:text-green-600={checkStatus.ok} class:text-red-600={!checkStatus.ok}>
+                    {checkStatus.message}
+                </p>
+            {/if}
         </div>
-
         <div class="space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-sm font-medium text-gray-700">Headers</span>
