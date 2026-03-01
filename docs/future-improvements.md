@@ -126,3 +126,13 @@ providerOptions: {
 **UX:** Tool checklist only appears after a successful connection check, keeping the form clean until the server is confirmed reachable.
 
 **Benefit:** Enables controlled eval comparisons — e.g. run with tool disabled to verify the skill handles the task alone, then run with tool enabled to compare behavior.
+
+## Manual API and MCP configuration + local deployment via Docker 
+
+## API version fetcher (Portainer api or project tags similar to deploy tool)
+
+## Manual Skill editing 
+
+## Skill Labeling/Versioning/Annotations
+
+## Skill Viewing
