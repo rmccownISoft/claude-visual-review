@@ -3,7 +3,7 @@ import { dirname, join, relative } from 'path'
 import type { Skill } from '$lib/types'
 import { unzipSync } from 'fflate'
 
-const SKILLS_DIR = join(process.cwd(), '.agents', 'skills')
+const SKILLS_DIR = join(process.cwd(), 'data', 'skills')
 
 
 /**

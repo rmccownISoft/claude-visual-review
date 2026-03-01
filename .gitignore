@@ -24,3 +24,6 @@ vite.config.ts.timestamp-*
 
 # Stored run results
 data/runs/*.json
+
+# Installed eval skills
+data/skills/
