@@ -1,6 +1,6 @@
 import { readFile, readdir } from 'fs/promises'
 import { join, relative } from 'path'
-
+import type { Skill } from '$lib/types'
 const SKILLS_DIR = join(process.cwd(), '.agents', 'skills')
 
 

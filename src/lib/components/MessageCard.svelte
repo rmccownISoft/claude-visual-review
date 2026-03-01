@@ -7,7 +7,7 @@
         children: Snippet 
     }
 
-    let { label, role, children } = $props()
+    let { label, role, children }: Props = $props()
 
     let open = $state(true)
 

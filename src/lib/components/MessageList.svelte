@@ -12,7 +12,7 @@
         messages: UIMessage[] 
     }
 
-    let { config, summary, messages } = $props()
+    let { config, summary, messages }: Props = $props()
 
     function formatDuration(ms: number) {
         return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`
