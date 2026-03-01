@@ -33,6 +33,7 @@ export type EvalRun = {
 	annotation: {
 		notes: string
 		savedAt: string | null
+		rating: 'good' | 'bad' | null // Review article(s) for other possibilities though this is user subjective
 	}
 }
 
@@ -78,10 +79,10 @@ export async function listRuns(): Promise<RunListItem[]> {
 	}
 }
 
-export async function updateAnnotation(id: string, notes: string): Promise<boolean> {
+export async function updateAnnotation(id: string, notes: string, rating: 'good' | 'bad' | null): Promise<boolean> {
 	const run = await loadRun(id)
 	if (!run) return false
-	run.annotation = { notes, savedAt: new Date().toISOString() }
+	run.annotation = { rating, notes, savedAt: new Date().toISOString() }
 	await saveRun(run)
 	return true
 }

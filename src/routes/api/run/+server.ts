@@ -122,7 +122,7 @@ export async function POST({ request }) {
     				totalOutputTokens: totalUsage.outputTokens ?? 0,
     				durationMs: Date.now() - startTime
     			},
-    			annotation: { notes: '', savedAt: null }
+    			annotation: { notes: '', savedAt: null, rating: null } // Initializing these null/empty 
     		}
     		await saveRun(run)
     	}
