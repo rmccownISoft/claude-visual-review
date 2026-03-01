@@ -1,5 +1,6 @@
 <script lang="ts">
     import type { PageData } from './$types'
+    import MessageList from '$lib/components/MessageList.svelte'
 
     let { data } = $props()
 
@@ -23,8 +24,12 @@
 
 <div class="flex h-full">
     <!-- Messages (Step 8 will fill this in) -->
-    <div class="flex-1 min-w-0 overflow-y-auto p-6">
-        <p class="text-sm text-gray-400">Messages — coming in Step 8</p>
+    <div class="flex-1 min-w-0 overflow-y-auto">
+        <MessageList
+            config={data.run.config}
+            summary={data.run.summary}
+            messages={data.run.uiMessages}
+        />
     </div>
 
     <!-- Annotation panel -->
