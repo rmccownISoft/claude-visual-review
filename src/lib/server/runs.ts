@@ -1,44 +1,10 @@
 import { readFile, writeFile, readdir } from 'fs/promises'
 import { join } from 'path'
-import type { UIMessage } from 'ai'
-import type { Skill } from './skills'
+import type { EvalRun, RunListItem } from '$lib/types'
 
 const RUNS_DIR = join(process.cwd(), 'data', 'runs')
 
-export type RunConfig = {
-	mcpServerUrl: string
-	mcpHeaders: Record<string, string>
-	skills: Skill[]
-	prompt: string
-	maxSteps: number
-}
-
-export type RunSummary = {
-	toolCallCount: number
-	skillLoadCount: number
-	stepCount: number
-	finishReason: string
-	finalAnswer: string
-	totalInputTokens: number
-	totalOutputTokens: number
-	durationMs: number
-}
-
-export type EvalRun = {
-	id: string
-	timestamp: string
-	config: RunConfig
-	uiMessages: UIMessage[]
-	summary: RunSummary
-	annotation: {
-		notes: string
-		savedAt: string | null
-		rating: 'good' | 'bad' | null // Review article(s) for other possibilities though this is user subjective
-	}
-}
-
 // Same shape minus the messages array, used for the run list sidebar
-export type RunListItem = Omit<EvalRun, 'uiMessages'>
 
 export function generateRunId(): string {
 	const ts = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 15)

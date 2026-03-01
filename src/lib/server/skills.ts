@@ -3,11 +3,7 @@ import { join, relative } from 'path'
 
 const SKILLS_DIR = join(process.cwd(), '.agents', 'skills')
 
-export type Skill = {
-    name: string 
-    description: string 
-    content: string //markdown body 
-}
+
 /**
  * 
  * To support skill directories with reference files, we'll have to read and inline them
