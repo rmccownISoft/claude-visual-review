@@ -9,6 +9,7 @@
     let headers = $state<{ key: string; value: string }[]>([])
     let selectedSkillNames = $state(new SvelteSet<string>())
     let prompt = $state('')
+    let setupPrompt = $state('')
     let maxSteps = $state(20)
     let running = $state(false)
     let streamOutput = $state('')
@@ -222,7 +223,19 @@
                 </div>
             </div>
         {/if}
-
+        <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-700" for="setupPrompt">
+                Setup prompt <span class="font-normal text-gray-400">(optional)</span>
+            </label>
+            <textarea
+                id="setupPrompt"
+                bind:value={setupPrompt}
+                rows={3}
+                placeholder="e.g. Login to the MCP server with user: x, password: y at storeId 5"
+                class="w-full resize-y rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            ></textarea>
+            <p class="text-xs text-gray-400">Runs before the main prompt. Leave blank if not needed.</p>
+        </div>
         <div class="space-y-1">
             <label class="text-sm font-medium text-gray-700" for="prompt">Prompt</label>
             <textarea

@@ -25,21 +25,16 @@ const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY })
  */
 
 // TODO: replace this if the sdk ever allows skills as an actual feature instead of this workaround
-function buildInstructions(skills: Skill[]): string {
-	const base = 'You are a helpful assistant. Use the available tools to answer the user\'s question thoroughly.'
-
-	if (skills.length === 0) return base
-
-	const skillList = skills
-		.map(s => `- **${s.name}**: ${s.description}`)
-		.join('\n')
-
-	return `${base}
-
-You have the following skills available. When a task matches a skill's description, call the \`loadSkill\` tool with that skill's name before proceeding — it will return the full instructions.
-
-${skillList}`
-}
+   function buildInstructions(skills: Skill[], setupPrompt?: string): string {
+       const base = 'You are a helpful assistant. Use the available tools to answer the user\'s question thoroughly.'
+       let instructions = base
+       if (setupPrompt) {
+           instructions += `\n\nBefore doing anything else, you MUST complete this setup step:\n${setupPrompt}\n\nOnce setup is complete, proceed with the user's actual task.`
+       }
+       if (skills.length === 0) return instructions
+       const skillList = skills.map(s => `- **${s.name}**: ${s.description}`).join('\n')
+       return `${instructions}\n\nYou have the following skills available. When a task matches a skill's description, call the \`loadSkill\` tool with that skill's name before proceeding — it will return the full instructions.\n\n${skillList}`
+   }
 
 // ToolLoopAgent.onFinish fires first (agent done), sets runSummary, closes the MCP client. Then toUIMessageStream.onFinish fires (stream done), and saves the complete run with actual messages.
 
@@ -54,6 +49,7 @@ export async function POST({ request }) {
             skills: Skill[]
             prompt: string 
             maxSteps: number
+			setupPrompt?: string
         }
     }
 
@@ -99,7 +95,7 @@ export async function POST({ request }) {
 	let runSummary: RunSummary | null = null
     const agent = new ToolLoopAgent({
     	model: anthropic('claude-sonnet-4-5'),
-    	instructions: buildInstructions(config.skills),
+    	instructions: buildInstructions(config.skills, config.setupPrompt),
     	tools: {
     		...mcpTools,
     		loadSkill: tool({

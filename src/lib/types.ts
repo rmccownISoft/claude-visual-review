@@ -19,6 +19,7 @@ export type RunConfig = {
 	mcpHeaders: Record<string, string>
 	skills: Skill[]
 	prompt: string
+	setupPrompt?: string
 	maxSteps: number
 }
 
