@@ -11,8 +11,10 @@
     let prompt = $state('')
     let setupPrompt = $state('')
     let maxSteps = $state(20)
+    type StreamEvent = { type: 'text'; content: string } | { type: 'tool'; id: string; name: string; done: boolean }
+
     let running = $state(false)
-    let streamOutput = $state('')
+    let streamEvents = $state<StreamEvent[]>([])
     let runError = $state<string | null>(null)
     // MCP status
     let checkStatus = $state<{ ok: boolean; message: string } | null>(null)
@@ -55,7 +57,7 @@
 
     async function startRun() {
         running = true
-        streamOutput = ''
+        streamEvents = []
         runError = null
         let capturedRunId: string | null = null
 
@@ -97,30 +99,34 @@
             const lines = buffer.split('\n')
             buffer = lines.pop() ?? ''
             for (const line of lines) {
-                if (line.startsWith('0:')) {
-                    try { streamOutput += JSON.parse(line.slice(2)) } catch {}
-                } else if (line.startsWith('2:')) {
-                    try {
-                        const parts = JSON.parse(line.slice(2)) as unknown[]
-                        for (const part of parts) {
-                            if (part && typeof part === 'object') {
-                                const p = part as Record<string, unknown>
-                                if (typeof p.runId === 'string') capturedRunId = p.runId
-                                const d = p.data
-                                if (d && typeof d === 'object' && typeof (d as Record<string, unknown>).runId === 'string')
-                                    capturedRunId = (d as Record<string, unknown>).runId as string
-                            }
+                if (!line.startsWith('data: ') || line === 'data: [DONE]') continue
+                try {
+                    const chunk = JSON.parse(line.slice(6)) as Record<string, unknown>
+                    if (chunk.type === 'text-delta' && typeof chunk.delta === 'string') {
+                        const last = streamEvents[streamEvents.length - 1]
+                        if (last?.type === 'text') {
+                            last.content += chunk.delta
+                        } else {
+                            streamEvents.push({ type: 'text', content: chunk.delta })
                         }
-                    } catch {}
-                } else if (line.startsWith('3:')) {
-                    try { runError = JSON.parse(line.slice(2)) } catch {} // for midstream errors from AI SDK
-                }
+                    } else if (chunk.type === 'tool-input-start') {
+                        streamEvents.push({ type: 'tool', id: chunk.toolCallId as string, name: chunk.toolName as string, done: false })
+                    } else if (chunk.type === 'tool-result') {
+                        const t = streamEvents.find(e => e.type === 'tool' && e.id === chunk.toolCallId)
+                        if (t?.type === 'tool') t.done = true
+                    } else if (chunk.type === 'data-runId') {
+                        const d = chunk.data as Record<string, unknown>
+                        if (typeof d?.runId === 'string') capturedRunId = d.runId
+                    } else if (chunk.type === 'error' && typeof chunk.errorText === 'string') {
+                        runError = chunk.errorText
+                    }
+                } catch {}
             }
         }
 
         running = false
         if (capturedRunId) {
-            await goto(`/runs/${capturedRunId}`)
+            await goto(`/runs/${capturedRunId}`, { invalidateAll: true })
         } else if (!runError) {
             runError = 'Run failed — server did not return a run ID.'
         }
@@ -133,8 +139,20 @@
             <div class="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
             <h2 class="text-lg font-semibold text-gray-800">Running...</h2>
         </div>
-        {#if streamOutput}
-            <pre class="rounded border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 whitespace-pre-wrap overflow-auto max-h-96">{streamOutput}</pre>
+        {#if streamEvents.length > 0}
+            <div class="rounded border border-gray-200 bg-gray-50 p-4 space-y-1 overflow-auto max-h-96">
+                {#each streamEvents as event}
+                    {#if event.type === 'text'}
+                        <p class="whitespace-pre-wrap text-sm text-gray-700">{event.content}</p>
+                    {:else}
+                        <div class="flex items-center gap-1.5 text-xs {event.done ? 'text-gray-400' : 'text-blue-600'}">
+                            <span>{event.done ? '✓' : '⚙'}</span>
+                            <span class="font-mono">{event.name}</span>
+                            {#if !event.done}<span class="opacity-60">running...</span>{/if}
+                        </div>
+                    {/if}
+                {/each}
+            </div>
         {:else}
             <p class="text-sm text-gray-400">Waiting for model output...</p>
         {/if}
