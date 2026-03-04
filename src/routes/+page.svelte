@@ -64,7 +64,7 @@
         )
         const selectedSkills = data.skills.filter(s => selectedSkillNames.has(s.name))
 
-        const config = { mcpServerUrl: url, mcpHeaders, skills: selectedSkills, prompt, maxSteps }
+        const config = { mcpServerUrl: url, mcpHeaders, skills: selectedSkills, prompt, maxSteps, setupPrompt: setupPrompt || undefined}
 
         let res: Response
         try {
