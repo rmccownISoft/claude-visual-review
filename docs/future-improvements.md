@@ -62,26 +62,6 @@ providerOptions: {
 
 **Benefit:** Core eval use case — run the same prompt with/without reasoning, or across models, and compare outputs side by side.
 
-## MCP Tool Selection
-
-**Problem:** All tools from the connected MCP server are passed to the agent. When a skill covers the same behavior as an MCP tool, there's no way to disable the tool to isolate or test the skill-based approach.
-
-**Proposed design:**
-- Expand `POST /api/mcp-check` response to include tool names: `{ ok: true, toolCount: N, tools: string[] }`
-- After a successful connection check on the New Run form, show a collapsible checklist of available tools (all checked by default)
-- User can deselect tools to exclude from the run
-- `RunConfig` gains `disabledTools: string[]` — stored with the run for reproducibility
-- In `POST /api/run`, filter `mcpTools` after `mcpClient.tools()`:
-  ```ts
-  const filteredTools = Object.fromEntries(
-      Object.entries(mcpTools).filter(([name]) => !config.disabledTools.includes(name))
-  )
-  ```
-
-**UX:** Tool checklist only appears after a successful connection check, keeping the form clean until the server is confirmed reachable.
-
-**Benefit:** Enables controlled eval comparisons — e.g. run with tool disabled to verify the skill handles the task alone, then run with tool enabled to compare behavior.
-
 ## Manual API and MCP configuration + local deployment via Docker 
 
 ## API version fetcher (Portainer api or project tags similar to deploy tool)
