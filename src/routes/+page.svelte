@@ -2,12 +2,16 @@
     import { goto } from '$app/navigation'
     import { SvelteSet } from 'svelte/reactivity'
     import type { PageData } from './$types'
-
+    import { resolve } from '$app/paths'
+    import type { RunConfig } from '$lib/types'
+    
     let { data }: { data: PageData } = $props()
 
     let url = $state('')
     let headers = $state<{ key: string; value: string }[]>([])
-    let selectedSkillNames = $state(new SvelteSet<string>())
+    let disabledTools = new SvelteSet<string>()
+    let availableTools = $state<string[]>([])
+    let selectedSkillNames = new SvelteSet<string>()
     let prompt = $state('')
     let setupPrompt = $state('')
     let maxSteps = $state(20)
@@ -20,10 +24,13 @@
     let checkStatus = $state<{ ok: boolean; message: string } | null>(null)
     let checking = $state(false)
 
+    // TODO: an if/else would make this linting warning go away
     function toggleSkill(name: string) {
         selectedSkillNames.has(name) ? selectedSkillNames.delete(name) : selectedSkillNames.add(name)
     }
-
+    function toggleTool(name: string) {
+        disabledTools.has(name) ? disabledTools.delete(name) : disabledTools.add(name)
+    }
     function addHeader() {
         headers = [...headers, { key: '', value: '' }]
     }
@@ -49,6 +56,7 @@
             checkStatus = data.ok
                 ? { ok: true, message: `✓ Connected — ${data.toolCount} tool${data.toolCount === 1 ? '' : 's'}` }
                 : { ok: false, message: data.error ?? 'Connection failed' }
+            availableTools = data.tools.length ? data.tools : []
         } catch {
             checkStatus = { ok: false, message: 'Network error' }
         }
@@ -66,7 +74,15 @@
         )
         const selectedSkills = data.skills.filter(s => selectedSkillNames.has(s.name))
 
-        const config = { mcpServerUrl: url, mcpHeaders, skills: selectedSkills, prompt, maxSteps, setupPrompt: setupPrompt || undefined}
+        const config: RunConfig = { 
+            mcpServerUrl: url, 
+            mcpHeaders, 
+            skills: selectedSkills, 
+            prompt, 
+            maxSteps, 
+            setupPrompt: setupPrompt || undefined,
+            disabledTools: [...disabledTools]
+        }
 
         let res: Response
         try {
@@ -126,7 +142,9 @@
 
         running = false
         if (capturedRunId) {
-            await goto(`/runs/${capturedRunId}`, { invalidateAll: true })
+            await goto(resolve(`/runs/${capturedRunId}`), { invalidateAll: true }).catch((err) => {
+                runError = `Navigation error: ${err instanceof Error ? err.message : String(err)}`
+            })
         } else if (!runError) {
             runError = 'Run failed — server did not return a run ID.'
         }
@@ -141,7 +159,7 @@
         </div>
         {#if streamEvents.length > 0}
             <div class="rounded border border-gray-200 bg-gray-50 p-4 space-y-1 overflow-auto max-h-96">
-                {#each streamEvents as event}
+                {#each streamEvents as event (event)}
                     {#if event.type === 'text'}
                         <p class="whitespace-pre-wrap text-sm text-gray-700">{event.content}</p>
                     {:else}
@@ -176,8 +194,10 @@
                            enabled:hover:bg-gray-100 enabled:hover:border-gray-400
                            disabled:cursor-not-allowed disabled:text-gray-400 disabled:border-gray-200"
                 >
-                    {checking ? 'Checking...' : 'Test connection'}
+                    {checking ? 'Checking...' : 'Test Connection & Retrieve Tool List'}
                 </button>
+
+
             </div>
             <input
                 id="url"
@@ -191,6 +211,24 @@
                     {checkStatus.message}
                 </p>
             {/if}
+             {#if availableTools?.length > 0}
+                 <details>
+                    <summary>Available Tools ({availableTools.length})</summary>
+                    <div class="mt-2 flex flex-col gap-1">
+                        {#each availableTools as tool (tool)}
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={!disabledTools.has(tool)}
+                                    onchange={() => toggleTool(tool)}
+                                    class="rounded border-gray-300"
+                                />
+                                <span class="text-sm text-gray-800">{tool}</span>
+                            </label>
+                        {/each}
+                    </div>
+                 </details>
+             {/if}
         </div>
         <div class="space-y-2">
             <div class="flex items-center justify-between">

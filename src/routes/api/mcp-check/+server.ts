@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ request }) => {
     try {
         const tools = await client.tools()
         await client.close()
-        return json({ ok: true, toolCount: Object.keys(tools).length })
+        return json({ ok: true, tools: Object.keys(tools) }) // TODO: consider adding response type in $lib/types.ts 
     } catch (err) {
         await client.close().catch(() => {})
         return json({ ok: false, error: `Failed to load tools: ${err instanceof Error ? err.message : String(err)}` })

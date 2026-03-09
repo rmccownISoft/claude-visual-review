@@ -18,6 +18,7 @@ export type RunConfig = {
 	mcpServerUrl: string
 	mcpHeaders: Record<string, string>
 	skills: Skill[]
+	disabledTools?: string[]
 	prompt: string
 	setupPrompt?: string
 	maxSteps: number
