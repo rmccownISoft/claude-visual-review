@@ -10,6 +10,7 @@ import {
 import { z } from 'zod'
 import { env } from '$env/dynamic/private'
 import { generateRunId, saveRun } from '$lib/server/runs'
+import { filterTools } from '$lib/server/tools'
 import type { RunSummary, Skill } from '$lib/types'
 
 const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY })
@@ -48,6 +49,7 @@ export async function POST({ request }) {
             mcpHeaders: Record<string, string>
             skills: Skill[]
             prompt: string 
+			disabledTools: string[]
             maxSteps: number
 			setupPrompt?: string
         }
@@ -77,6 +79,7 @@ export async function POST({ request }) {
 		)
 	}
 	
+	// TODO: awaited is apparently the lazy way to do this, should figure out the actual returned type here
 	let mcpTools: Awaited<ReturnType<typeof mcpClient.tools>>
 	try {
 	    mcpTools = await mcpClient.tools()
@@ -88,6 +91,7 @@ export async function POST({ request }) {
 	    )
 	}
 
+	const filteredTools = filterTools(mcpTools, config.disabledTools ?? [])
     // Accumulate per-step stats to build the summary in onFinish
     let toolCallCount = 0
     let skillLoadCount = 0
@@ -97,7 +101,7 @@ export async function POST({ request }) {
     	model: anthropic('claude-sonnet-4-5'),
     	instructions: buildInstructions(config.skills, config.setupPrompt),
     	tools: {
-    		...mcpTools,
+    		...filteredTools,
     		loadSkill: tool({
     			description: 'Load the full instructions for a named skill. Call this when a task matches a skill description.',
     			inputSchema: z.object({

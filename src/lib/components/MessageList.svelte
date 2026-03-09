@@ -64,6 +64,7 @@
                     {@const toolName = getToolName(part)}
                     <div class="mt-2 overflow-hidden rounded border border-gray-200 font-mono text-xs">
                         <div class="flex items-center gap-2 border-b border-gray-200 bg-gray-50 px-3 py-1.5">
+                            <span class="rounded bg-green-200 px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">tool</span>
                             <span class="font-semibold">{toolName}</span>
                             <span class="text-gray-400">{part.state}</span>
                         </div>
