@@ -16,7 +16,11 @@ Always invoke the `ai-sdk` skill before suggesting any Vercel AI SDK API, import
 - Can't import from `$lib/server/` in client components — inline types instead
 - All shared types live in `$lib/types.ts`
 
+## Reference Docs
+Check `docs/` for planning and architecture documents relevant to the current task.
+
 ## Workflow
+- When a feature or goal from `docs/` is implemented, update the relevant doc to mark it complete.
 - Step-by-step walkthrough: explain each change, user implements or asks questions
 - User implements changes themselves, or Claude implements with tools after being asked to
 - Prefer concise responses
