@@ -4,7 +4,8 @@
       "WebFetch(domain:support.claude.com)",
       "WebFetch(domain:ai-sdk.dev)",
       "Bash(test -d \"node_modules/@ai-sdk/mcp\")",
-      "mcp__plugin_svelte_svelte__svelte-autofixer"
+      "mcp__plugin_svelte_svelte__svelte-autofixer",
+      "Read(//c/Users/kc0hw/.claude/skills/**)"
     ]
   }
 }
