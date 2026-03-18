@@ -4,6 +4,23 @@ This document outlines goals for enriching the eval run JSON format to support b
 
 ---
 
+## Prioritization
+
+Implement in this order based on what unblocks eval workflows first:
+
+**Implement now:**
+- **Goal 3 (summary additions)** — `errorCount`, `toolCallsByName`, `firstSuccessfulQueryStep` are derivable from `uiMessages` at save time with no runtime changes. Directly answers "did the right tools get called" and "how efficient was it."
+- **Goal 2 (config: `promptId`, `label`)** — `promptId` groups runs for comparison across skill/config variants. Without it, cross-run analysis has no stable key. `label` (e.g. `"baseline"`, `"with-skill"`) makes variants human-readable.
+
+**Defer:**
+- **Goal 1 (snapshot)** — useful for reproducibility but doesn't unblock evals yet.
+- **Goal 4 (expectedAnswer, structured grading)** — depends on the eval config format, which isn't designed yet.
+- **Goal 5 (skillsUsed heuristic)** — heuristic approach is fragile; `toolCallsByName` on `loadSkill` is sufficient for now.
+
+**After Goals 2 & 3 are implemented:** write `docs/run-format.md` documenting the stable top-level shape, each `uiMessages` part type, and the summary fields. This gives Claude Code a fast reference for analyzing run files without writing a parsing script each time.
+
+---
+
 ## Background
 
 The current `EvalRun` shape:
