@@ -1,11 +1,13 @@
- {
+{
   "permissions": {
     "allow": [
       "WebFetch(domain:support.claude.com)",
       "WebFetch(domain:ai-sdk.dev)",
       "Bash(test -d \"node_modules/@ai-sdk/mcp\")",
       "mcp__plugin_svelte_svelte__svelte-autofixer",
-      "Read(//c/Users/kc0hw/.claude/skills/**)"
+      "Read(//c/Users/kc0hw/.claude/skills/**)",
+      "Bash(C:Userskc0hw.claudepluginscacheclaude-plugins-officialsuperpowers5.0.6scriptsstart-server.sh --project-dir \"c:\\\\Users\\\\kc0hw\\\\Documents\\\\GitHub\\\\claude-visual-review\")",
+      "Bash(npx svelte-check:*)"
     ]
   }
 }
