@@ -16,7 +16,7 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<div class="min-h-screen flex flex-col">
+<div class="h-screen flex flex-col">
     <nav class="bg-gray-900 text-white px-6 py-3 flex items-center shrink-0">
         <span class="font-semibold text-lg mr-6">MCP Eval</span>
         <div class="flex gap-1">
@@ -26,7 +26,7 @@
         </div>
     </nav>
 
-    <main class="flex-1 min-h-0">
+    <main class="flex-1 min-h-0 overflow-y-auto">
         {@render children()}
     </main>
 </div>
