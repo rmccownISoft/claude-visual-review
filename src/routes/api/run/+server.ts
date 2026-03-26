@@ -33,7 +33,7 @@ const anthropic = createAnthropic({ apiKey: env.ANTHROPIC_API_KEY })
            instructions += `\n\nBefore doing anything else, you MUST complete this setup step:\n${setupPrompt}\n\nOnce setup is complete, proceed with the user's actual task.`
        }
        if (skills.length === 0) return instructions
-       const skillList = skills.map(s => `- **${s.name}**: ${s.description}`).join('\n')
+       const skillList = skills.map(s => `- **${s.id}**: ${s.description}`).join('\n')
        return `${instructions}\n\nYou have the following skills available. When a task matches a skill's description, call the \`loadSkill\` tool with that skill's name before proceeding — it will return the full instructions.\n\n${skillList}`
    }
 
