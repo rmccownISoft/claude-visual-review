@@ -25,8 +25,8 @@
     let checking = $state(false)
 
     // TODO: an if/else would make this linting warning go away
-    function toggleSkill(name: string) {
-        selectedSkillNames.has(name) ? selectedSkillNames.delete(name) : selectedSkillNames.add(name)
+    function toggleSkill(id: string) {
+        selectedSkillNames.has(id) ? selectedSkillNames.delete(id) : selectedSkillNames.add(id)
     }
     function toggleTool(name: string) {
         disabledTools.has(name) ? disabledTools.delete(name) : disabledTools.add(name)
@@ -72,7 +72,7 @@
         const mcpHeaders = Object.fromEntries(
             headers.filter(h => h.key.trim()).map(h => [h.key.trim(), h.value])
         )
-        const selectedSkills = data.skills.filter(s => selectedSkillNames.has(s.name))
+        const selectedSkills = data.skills.filter(s => selectedSkillNames.has(s.id))
 
         const config: RunConfig = { 
             mcpServerUrl: url, 
@@ -262,12 +262,12 @@
             <div class="space-y-2">
                 <span class="text-sm font-medium text-gray-700">Skills</span>
                 <div class="space-y-1.5">
-                    {#each data.skills as skill (skill.name)}
+                    {#each data.skills as skill (skill.id)}
                         <label class="flex cursor-pointer items-start gap-2.5">
                             <input
                                 type="checkbox"
-                                checked={selectedSkillNames.has(skill.name)}
-                                onchange={() => toggleSkill(skill.name)}
+                                checked={selectedSkillNames.has(skill.id)}
+                                onchange={() => toggleSkill(skill.id)}
                                 class="mt-0.5 rounded border-gray-300"
                             />
                             <span class="text-sm">

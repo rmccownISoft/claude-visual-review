@@ -62,18 +62,18 @@
             <p class="text-sm text-gray-400">No skills installed.</p>
         {:else}
             <div class="divide-y divide-gray-100 rounded border border-gray-200">
-                {#each data.skills as skill (skill.name)}
+                {#each data.skills as skill (skill.id)}
                     <div class="flex items-start justify-between gap-4 px-4 py-3">
                         <div>
                             <p class="text-sm font-medium text-gray-800">{skill.name}</p>
                             <p class="text-xs text-gray-500 mt-0.5">{skill.description}</p>
                         </div>
                         <button
-                            onclick={() => remove(skill.name)}
-                            disabled={deletingName === skill.name}
+                            onclick={() => remove(skill.id)}
+                            disabled={deletingName === skill.id}
                             class="shrink-0 text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
                         >
-                            {deletingName === skill.name ? 'Deleting…' : 'Delete'}
+                            {deletingName === skill.id ? 'Deleting…' : 'Delete'}
                         </button>
                     </div>
                 {/each}

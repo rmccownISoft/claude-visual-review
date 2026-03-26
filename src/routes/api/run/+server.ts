@@ -59,7 +59,7 @@ export async function POST({ request }) {
     const startTime = Date.now()
 
     // Build skill lookup, the loadSkill tool reads this 
-    const skillMap = new Map(config.skills.map(s => [s.name, s.content]))
+    const skillMap = new Map(config.skills.map(s => [s.id, s.content]))
 
     // Fail early if MCP server is unreachable 
     let mcpClient: Awaited<ReturnType<typeof createMCPClient>>
