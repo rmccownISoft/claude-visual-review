@@ -22,6 +22,9 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Brainstorm session files
+.superpowers/
+
 # Stored run results
 data/runs/*.json
 
