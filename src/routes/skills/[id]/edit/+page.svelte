@@ -71,7 +71,7 @@
             prompt,
             maxSteps,
             setupPrompt: setupPrompt || undefined,
-            disabledTools: []
+            disabledTools: [...disabledTools]
         }
 
         let res: Response
@@ -95,11 +95,17 @@
         }
 
         // Read stream to get runId, then navigate
-        const reader = res.body!.getReader()
+        if (!res.body) {
+            runError = 'No response body from server.'
+            running = false
+            return
+        }
+        const reader = res.body.getReader()
         const decoder = new TextDecoder()
         let streamBuffer = ''
         let capturedRunId: string | null = null
 
+        let streamError = false
         while (true) {
             const { done, value } = await reader.read()
             if (done) break
@@ -115,9 +121,13 @@
                         if (typeof d?.runId === 'string') capturedRunId = d.runId
                     } else if (chunk.type === 'error' && typeof chunk.errorText === 'string') {
                         runError = chunk.errorText
+                        await reader.cancel()
+                        streamError = true
+                        break
                     }
                 } catch {}
             }
+            if (streamError) break
         }
 
         running = false
