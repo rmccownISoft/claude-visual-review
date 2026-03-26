@@ -86,5 +86,16 @@
                 </p>
             {/if}
         </div>
+
+        {#if data.run.config.skills.length === 1 && data.run.config.skills[0].id}
+            <div class="pt-2 border-t border-gray-100">
+                <a
+                    href="/skills/{data.run.config.skills[0].id}/edit"
+                    class="text-xs text-blue-600 hover:text-blue-800"
+                >
+                    Edit skill → {data.run.config.skills[0].id}
+                </a>
+            </div>
+        {/if}
     </aside>
 </div>

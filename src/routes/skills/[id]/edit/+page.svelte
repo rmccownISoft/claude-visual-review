@@ -17,7 +17,8 @@
     // Run config state — populated from localStorage on mount
     let configOpen = $state(true)
     let url = $state('')
-    let headers = $state<{ key: string; value: string }[]>([])
+    let headers = $state<{ uid: number; key: string; value: string }[]>([])
+    let _headerUid = 0
     let prompt = $state('')
     let setupPrompt = $state('')
     let maxSteps = $state(20)
@@ -38,7 +39,9 @@
             if (saved) {
                 const cfg = JSON.parse(saved)
                 url = cfg.url ?? ''
-                headers = cfg.headers ?? []
+                const loadedHeaders = (cfg.headers ?? []).map((h: { key: string; value: string }, i: number) => ({ uid: i, key: h.key, value: h.value }))
+                headers = loadedHeaders
+                _headerUid = loadedHeaders.length
                 prompt = cfg.prompt ?? ''
                 setupPrompt = cfg.setupPrompt ?? ''
                 maxSteps = cfg.maxSteps ?? 20
@@ -48,12 +51,85 @@
 
     function persistConfig() {
         if (typeof localStorage !== 'undefined') {
-            localStorage.setItem(storageKey, JSON.stringify({ url, headers, prompt, setupPrompt, maxSteps }))
+            localStorage.setItem(storageKey, JSON.stringify({ url, headers: headers.map(h => ({ key: h.key, value: h.value })), prompt, setupPrompt, maxSteps }))
+        }
+    }
+
+    async function startRun() {
+        running = true
+        runError = null
+        persistConfig()
+
+        const mcpHeaders = Object.fromEntries(
+            headers.filter(h => h.key.trim()).map(h => [h.key.trim(), h.value])
+        )
+        const otherSelected = data.otherSkills.filter(s => selectedOtherSkillIds.has(s.id))
+        const config: RunConfig = {
+            mcpServerUrl: url,
+            mcpHeaders,
+            skills: [data.skill, ...otherSelected],
+            prompt,
+            maxSteps,
+            setupPrompt: setupPrompt || undefined,
+            disabledTools: []
+        }
+
+        let res: Response
+        try {
+            res = await fetch('/api/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ config })
+            })
+        } catch (err) {
+            runError = `Network error: ${err instanceof Error ? err.message : String(err)}`
+            running = false
+            return
+        }
+
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}))
+            runError = body.error ?? `Server error ${res.status}`
+            running = false
+            return
+        }
+
+        // Read stream to get runId, then navigate
+        const reader = res.body!.getReader()
+        const decoder = new TextDecoder()
+        let streamBuffer = ''
+        let capturedRunId: string | null = null
+
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            streamBuffer += decoder.decode(value, { stream: true })
+            const lines = streamBuffer.split('\n')
+            streamBuffer = lines.pop() ?? ''
+            for (const line of lines) {
+                if (!line.startsWith('data: ') || line === 'data: [DONE]') continue
+                try {
+                    const chunk = JSON.parse(line.slice(6)) as Record<string, unknown>
+                    if (chunk.type === 'data-runId') {
+                        const d = chunk.data as Record<string, unknown>
+                        if (typeof d?.runId === 'string') capturedRunId = d.runId
+                    } else if (chunk.type === 'error' && typeof chunk.errorText === 'string') {
+                        runError = chunk.errorText
+                    }
+                } catch {}
+            }
+        }
+
+        running = false
+        if (capturedRunId) {
+            await goto(resolve(`/runs/${capturedRunId}`))
+        } else if (!runError) {
+            runError = 'Run failed — server did not return a run ID.'
         }
     }
 
     function addHeader() {
-        headers = [...headers, { key: '', value: '' }]
+        headers = [...headers, { uid: _headerUid++, key: '', value: '' }]
     }
 
     function removeHeader(i: number) {
@@ -77,8 +153,9 @@
             }
         } catch {
             saveError = 'Network error'
+        } finally {
+            saving = false
         }
-        saving = false
     }
 </script>
 
@@ -129,10 +206,11 @@
                     {saving ? 'Saving…' : saveLabel}
                 </button>
                 <button
-                    disabled={true}
-                    class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white opacity-50 cursor-not-allowed"
+                    onclick={startRun}
+                    disabled={running || !url.trim() || !prompt.trim()}
+                    class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    ▶ Run
+                    {running ? 'Running…' : '▶ Run'}
                 </button>
             </div>
         </div>
@@ -157,7 +235,7 @@
                         <span class="text-xs font-medium text-gray-700">Headers</span>
                         <button onclick={addHeader} class="text-xs text-blue-600 hover:underline">+ Add</button>
                     </div>
-                    {#each headers as header, i (i)}
+                    {#each headers as header, i (header.uid)}
                         <div class="flex gap-2">
                             <input bind:value={header.key} oninput={persistConfig} placeholder="key" class="flex-1 rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
                             <input bind:value={header.value} oninput={persistConfig} placeholder="value" class="flex-1 rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" />
