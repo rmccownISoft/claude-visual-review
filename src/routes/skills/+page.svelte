@@ -1,6 +1,7 @@
 <script lang="ts">
     import { invalidateAll } from '$app/navigation'
     import type { PageData } from './$types'
+    import { groupSkillsByFamily, versionLabel } from '$lib/skillVersioning'
 
     let { data }: { data: PageData } = $props()
 
@@ -8,8 +9,10 @@
     let uploading = $state(false)
     let uploadError = $state<string | null>(null)
     let uploadSuccess = $state<string | null>(null)
-    let deletingName = $state<string | null>(null)
+    let deletingId = $state<string | null>(null)
     let deleteError = $state<string | null>(null)
+
+    let families = $derived(groupSkillsByFamily(data.skills))
 
     async function install() {
         const file = fileInput?.files?.[0]
@@ -27,8 +30,7 @@
             } else {
                 uploadSuccess = `Installed "${body.id}"`
                 if (fileInput) fileInput.value = ''
-                // TODO: force list refresh, see if there's a more appropriate way to do this
-                await invalidateAll() 
+                await invalidateAll()
             }
         } catch {
             uploadError = 'Network error'
@@ -36,20 +38,20 @@
         uploading = false
     }
 
-    async function remove(name: string) {
-        deletingName = name
+    async function remove(id: string) {
+        deletingId = id
         deleteError = null
         try {
-            const res = await fetch(`/api/skills/${name}`, { method: 'DELETE' })
+            const res = await fetch(`/api/skills/${id}`, { method: 'DELETE' })
             if (!res.ok) {
-                deleteError = `Failed to delete "${name}"`
+                deleteError = `Failed to delete "${id}"`
             } else {
                 await invalidateAll()
             }
         } catch {
             deleteError = 'Network error'
         }
-        deletingName = null
+        deletingId = null
     }
 </script>
 
@@ -58,23 +60,49 @@
 
     <section class="space-y-3">
         <h2 class="text-sm font-medium text-gray-700">Installed</h2>
-        {#if data.skills.length === 0}
+        {#if families.length === 0}
             <p class="text-sm text-gray-400">No skills installed.</p>
         {:else}
             <div class="divide-y divide-gray-100 rounded border border-gray-200">
-                {#each data.skills as skill (skill.id)}
-                    <div class="flex items-start justify-between gap-4 px-4 py-3">
-                        <div>
-                            <p class="text-sm font-medium text-gray-800">{skill.name}</p>
-                            <p class="text-xs text-gray-500 mt-0.5">{skill.description}</p>
+                {#each families as family (family.baseName)}
+                    <div class="px-4 py-3 space-y-2">
+                        <!-- Family header -->
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-sm font-medium text-gray-800">{family.displayName}</span>
+                                <span class="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                                    {family.members.length} {family.members.length === 1 ? 'version' : 'versions'}
+                                </span>
+                            </div>
                         </div>
-                        <button
-                            onclick={() => remove(skill.id)}
-                            disabled={deletingName === skill.id}
-                            class="shrink-0 text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
-                        >
-                            {deletingName === skill.id ? 'Deleting…' : 'Delete'}
-                        </button>
+                        <p class="text-xs text-gray-500">{family.description}</p>
+
+                        <!-- Version rows -->
+                        <div class="pl-3 border-l-2 border-gray-200 space-y-1.5">
+                            {#each family.members as { skill, isLatest } (skill.id)}
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs text-gray-600">{versionLabel(skill.id)}</span>
+                                        {#if isLatest && family.members.length > 1}
+                                            <span class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">latest</span>
+                                        {/if}
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <a
+                                            href="/skills/{skill.id}/edit"
+                                            class="text-xs text-blue-600 hover:text-blue-800"
+                                        >Edit</a>
+                                        <button
+                                            onclick={() => remove(skill.id)}
+                                            disabled={deletingId === skill.id}
+                                            class="text-xs text-red-500 hover:text-red-700 disabled:opacity-40"
+                                        >
+                                            {deletingId === skill.id ? 'Deleting…' : 'Delete'}
+                                        </button>
+                                    </div>
+                                </div>
+                            {/each}
+                        </div>
                     </div>
                 {/each}
             </div>
@@ -85,9 +113,9 @@
     </section>
 
     <section class="space-y-3">
-        <h2 class="text-sm font-medium text-gray-700">Install from ZIP</h2>
+        <h2 class="text-sm font-medium text-gray-700">Install from file</h2>
         <p class="text-xs text-gray-500">
-            Upload a <code>.md</code> file (single skill), a <code>.skill</code> or <code>.zip</code> archive containing a skill directory with a <code>SKILL.md</code> at its root.
+            Upload a <code>.md</code> file (single skill), or a <code>.skill</code> / <code>.zip</code> archive containing a skill directory with a <code>SKILL.md</code> at its root.
         </p>
         <div class="flex items-center gap-3">
             <input
