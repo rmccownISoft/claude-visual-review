@@ -1,67 +1,24 @@
 <script lang="ts">
     import { goto } from '$app/navigation'
-    import { SvelteSet } from 'svelte/reactivity'
     import type { PageData } from './$types'
     import { resolve } from '$app/paths'
     import type { RunConfig } from '$lib/types'
-    
+    import RunConfigForm from '$lib/components/RunConfigForm.svelte'
+
     let { data }: { data: PageData } = $props()
 
     let url = $state('')
     let headers = $state<{ key: string; value: string }[]>([])
-    let disabledTools = new SvelteSet<string>()
-    let availableTools = $state<string[]>([])
-    let selectedSkillNames = new SvelteSet<string>()
     let prompt = $state('')
     let setupPrompt = $state('')
     let maxSteps = $state(20)
-    type StreamEvent = { type: 'text'; content: string } | { type: 'tool'; id: string; name: string; done: boolean }
+    let disabledTools = $state<string[]>([])
+    let selectedSkillIds = $state<string[]>([])
 
+    type StreamEvent = { type: 'text'; content: string } | { type: 'tool'; id: string; name: string; done: boolean }
     let running = $state(false)
     let streamEvents = $state<StreamEvent[]>([])
     let runError = $state<string | null>(null)
-    // MCP status
-    let checkStatus = $state<{ ok: boolean; message: string } | null>(null)
-    let checking = $state(false)
-
-    // TODO: an if/else would make this linting warning go away
-    function toggleSkill(id: string) {
-        selectedSkillNames.has(id) ? selectedSkillNames.delete(id) : selectedSkillNames.add(id)
-    }
-    function toggleTool(name: string) {
-        disabledTools.has(name) ? disabledTools.delete(name) : disabledTools.add(name)
-    }
-    function addHeader() {
-        headers = [...headers, { key: '', value: '' }]
-    }
-
-    function removeHeader(i: number) {
-        headers = headers.filter((_, j) => j !== i)
-    }
-
-    // Checks that the MCP server can be reached
-    async function checkServer() {
-        checking = true
-        checkStatus = null
-        const mcpHeaders = Object.fromEntries(
-            headers.filter(h => h.key.trim()).map(h => [h.key.trim(), h.value])
-        )
-        try {
-            const res = await fetch('/api/mcp-check', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, headers: mcpHeaders })
-            })
-            const data = await res.json()
-            checkStatus = data.ok
-                ? { ok: true, message: `✓ Connected — ${data.toolCount} tool${data.toolCount === 1 ? '' : 's'}` }
-                : { ok: false, message: data.error ?? 'Connection failed' }
-            availableTools = data.tools.length ? data.tools : []
-        } catch {
-            checkStatus = { ok: false, message: 'Network error' }
-        }
-        checking = false
-    }
 
     async function startRun() {
         running = true
@@ -72,16 +29,16 @@
         const mcpHeaders = Object.fromEntries(
             headers.filter(h => h.key.trim()).map(h => [h.key.trim(), h.value])
         )
-        const selectedSkills = data.skills.filter(s => selectedSkillNames.has(s.id))
+        const selectedSkills = data.skills.filter(s => selectedSkillIds.includes(s.id))
 
-        const config: RunConfig = { 
-            mcpServerUrl: url, 
-            mcpHeaders, 
-            skills: selectedSkills, 
-            prompt, 
-            maxSteps, 
+        const config: RunConfig = {
+            mcpServerUrl: url,
+            mcpHeaders,
+            skills: selectedSkills,
+            prompt,
+            maxSteps,
             setupPrompt: setupPrompt || undefined,
-            disabledTools: [...disabledTools]
+            disabledTools
         }
 
         let res: Response
@@ -184,136 +141,16 @@
             <div class="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{runError}</div>
         {/if}
 
-        <div class="space-y-1">
-            <div class="flex items-center justify-between">
-                <label class="text-sm font-medium text-gray-700" for="url">MCP Server URL</label>
-                <button
-                    onclick={checkServer}
-                    disabled={!url.trim() || checking}
-                    class="bg-transparent text-xs text-gray-600 font-semibold py-1.5 px-3 border border-gray-300 rounded
-                           enabled:hover:bg-gray-100 enabled:hover:border-gray-400
-                           disabled:cursor-not-allowed disabled:text-gray-400 disabled:border-gray-200"
-                >
-                    {checking ? 'Checking...' : 'Test Connection & Retrieve Tool List'}
-                </button>
-
-
-            </div>
-            <input
-                id="url"
-                bind:value={url}
-                type="url"
-                placeholder="https://..."
-                class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-            {#if checkStatus}
-                <p class="text-xs" class:text-green-600={checkStatus.ok} class:text-red-600={!checkStatus.ok}>
-                    {checkStatus.message}
-                </p>
-            {/if}
-             {#if availableTools?.length > 0}
-                 <details>
-                    <summary>Available Tools ({availableTools.length})</summary>
-                    <div class="mt-2 flex flex-col gap-1">
-                        {#each availableTools as tool (tool)}
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={!disabledTools.has(tool)}
-                                    onchange={() => toggleTool(tool)}
-                                    class="rounded border-gray-300"
-                                />
-                                <span class="text-sm text-gray-800">{tool}</span>
-                            </label>
-                        {/each}
-                    </div>
-                 </details>
-             {/if}
-        </div>
-        <div class="space-y-2">
-            <div class="flex items-center justify-between">
-                <span class="text-sm font-medium text-gray-700">Headers</span>
-                <button onclick={addHeader} class="text-xs text-blue-600 hover:underline">+ Add header</button>
-            </div>
-            {#each headers as header, i (i)}
-                <div class="flex gap-2">
-                    <input
-                        bind:value={header.key}
-                        placeholder="key"
-                        class="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <input
-                        bind:value={header.value}
-                        placeholder="value"
-                        class="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <button
-                        onclick={() => removeHeader(i)}
-                        class="px-2 text-gray-400 hover:text-gray-600"
-                        aria-label="Remove header"
-                    >×</button>
-                </div>
-            {:else}
-                <p class="text-xs text-gray-400">No headers. Click "+ Add header" to add one.</p>
-            {/each}
-        </div>
-
-        {#if data.skills.length > 0}
-            <div class="space-y-2">
-                <span class="text-sm font-medium text-gray-700">Skills</span>
-                <div class="space-y-1.5">
-                    {#each data.skills as skill (skill.id)}
-                        <label class="flex cursor-pointer items-start gap-2.5">
-                            <input
-                                type="checkbox"
-                                checked={selectedSkillNames.has(skill.id)}
-                                onchange={() => toggleSkill(skill.id)}
-                                class="mt-0.5 rounded border-gray-300"
-                            />
-                            <span class="text-sm">
-                                <span class="font-medium text-gray-800">{skill.name}</span>
-                                <span class="ml-1.5 text-gray-500">{skill.description}</span>
-                            </span>
-                        </label>
-                    {/each}
-                </div>
-            </div>
-        {/if}
-        <div class="space-y-1">
-            <label class="text-sm font-medium text-gray-700" for="setupPrompt">
-                Setup prompt <span class="font-normal text-gray-400">(optional)</span>
-            </label>
-            <textarea
-                id="setupPrompt"
-                bind:value={setupPrompt}
-                rows={3}
-                placeholder="e.g. Login to the MCP server with user: x, password: y at storeId 5"
-                class="w-full resize-y rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            ></textarea>
-            <p class="text-xs text-gray-400">Runs before the main prompt. Leave blank if not needed.</p>
-        </div>
-        <div class="space-y-1">
-            <label class="text-sm font-medium text-gray-700" for="prompt">Prompt</label>
-            <textarea
-                id="prompt"
-                bind:value={prompt}
-                rows={6}
-                placeholder="Enter the prompt for the agent..."
-                class="w-full resize-y rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            ></textarea>
-        </div>
-
-        <div class="space-y-1">
-            <label class="text-sm font-medium text-gray-700" for="maxSteps">Max Steps</label>
-            <input
-                id="maxSteps"
-                bind:value={maxSteps}
-                type="number"
-                min={1}
-                max={100}
-                class="w-24 rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-        </div>
+        <RunConfigForm
+            bind:url
+            bind:headers
+            bind:prompt
+            bind:setupPrompt
+            bind:maxSteps
+            bind:disabledTools
+            bind:selectedSkillIds
+            optionalSkills={data.skills}
+        />
 
         <button
             onclick={startRun}
