@@ -63,6 +63,7 @@ export async function listSkills(dir = SKILLS_DIR): Promise<Skill[]> {
                     skill.content += sections.join('')
                 }
 
+                skill.id = entry.name
                 return skill
             })
     )
@@ -73,8 +74,10 @@ export async function listSkills(dir = SKILLS_DIR): Promise<Skill[]> {
 // TODO: come back to this later https://ai-sdk.dev/docs/agents/building-agents
 // TODO: supposed to be yaml format, we could use a yaml parser
 export function parseSkillFile(rawContent: string): Skill | null {
+    // Normalize line endings so Windows-authored skill files (CRLF) parse correctly
+    const normalized = rawContent.replace(/\r\n/g, '\n')
     // Skill files start with --- and have a closing ---
-	const frontmatterMatch = rawContent.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/m)
+	const frontmatterMatch = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/m)
 	if (!frontmatterMatch) return null
 
 	const frontmatter = frontmatterMatch[1]
@@ -86,7 +89,7 @@ export function parseSkillFile(rawContent: string): Skill | null {
 
 	if (!name || !description) return null
 
-	return { name, description, content: body }
+	return { id: '', name, description, content: body }
 }
 
 /**

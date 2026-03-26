@@ -38,7 +38,8 @@ export type RunSummary = {
 }
 
 export type Skill = {
-    name: string 
-    description: string 
-    content: string //markdown body 
+    id: string          // storage key: directory name or .md filename stem (e.g. "open-sales-orders-v2")
+    name: string        // frontmatter display name (e.g. "open-sales-orders")
+    description: string
+    content: string     // markdown body
 }

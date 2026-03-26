@@ -127,6 +127,31 @@ Main content.`)
         expect(result[0].content).toContain('Helpful info.')
     })
 
+    it('populates id from directory name', async () => {
+        await mkdir(join(testDir, 'my-skill'))
+        await writeFile(join(testDir, 'my-skill', 'SKILL.md'), `---
+name: my-skill
+description: Does something useful
+---
+Body content`)
+
+        const result = await listSkills(testDir)
+        expect(result[0].id).toBe('my-skill')
+    })
+
+    it('id differs from frontmatter name when directory has version suffix', async () => {
+        await mkdir(join(testDir, 'my-skill-v2'))
+        await writeFile(join(testDir, 'my-skill-v2', 'SKILL.md'), `---
+name: my-skill
+description: Does something useful
+---
+Body content`)
+
+        const result = await listSkills(testDir)
+        expect(result[0].id).toBe('my-skill-v2')
+        expect(result[0].name).toBe('my-skill')
+    })
+
     it('returns multiple skills', async () => {
         for (const name of ['skill-a', 'skill-b']) {
             await mkdir(join(testDir, name))
