@@ -31,11 +31,11 @@ export async function collectMdFiles(dir: string, exclude: string): Promise<stri
 }
 
 export async function listSkills(dir = SKILLS_DIR): Promise<Skill[]> {
-	// Note: Originally tried to use Awaited but still returned a ts error, never seen that one
-	const entries = await readdir(dir, { withFileTypes: true }).catch(() => null)
-	if (!entries) return []
+    const entries = await readdir(dir, { withFileTypes: true }).catch(() => null)
+    if (!entries) return []
 
-    const results = await Promise.all(
+    // Pass 1: directory-based skills (existing behavior)
+    const dirResults = await Promise.all(
         entries
             .filter(e => e.isDirectory())
             .map(async (entry) => {
@@ -46,11 +46,10 @@ export async function listSkills(dir = SKILLS_DIR): Promise<Skill[]> {
                 } catch {
                     return null
                 }
-
                 const skill = parseSkillFile(raw)
                 if (!skill) return null
+                skill.id = entry.name
 
-                // Inline supporting .md files so the model gets full context
                 const extras = await collectMdFiles(skillDir, 'SKILL.md')
                 if (extras.length > 0) {
                     const sections = await Promise.all(
@@ -62,13 +61,25 @@ export async function listSkills(dir = SKILLS_DIR): Promise<Skill[]> {
                     )
                     skill.content += sections.join('')
                 }
-
-                skill.id = entry.name
                 return skill
             })
     )
 
-    return results.filter((s): s is Skill => s !== null)
+    // Pass 2: bare .md file skills
+    const mdResults = await Promise.all(
+        entries
+            .filter(e => e.isFile() && e.name.endsWith('.md'))
+            .map(async (entry) => {
+                const raw = await readFile(join(dir, entry.name), 'utf-8').catch(() => null)
+                if (!raw) return null
+                const skill = parseSkillFile(raw)
+                if (!skill) return null
+                skill.id = entry.name.replace(/\.md$/, '')
+                return skill
+            })
+    )
+
+    return [...dirResults, ...mdResults].filter((s): s is Skill => s !== null)
 }
 
 // TODO: come back to this later https://ai-sdk.dev/docs/agents/building-agents
@@ -95,8 +106,36 @@ export function parseSkillFile(rawContent: string): Skill | null {
 /**
  * Zip file handling for packaged skills
  */
-export async function deleteSkill(name: string): Promise<void> {
-    await rm(join(SKILLS_DIR, name), { recursive: true, force: true })
+export async function deleteSkill(name: string, dir = SKILLS_DIR): Promise<void> {
+    await rm(join(dir, name), { recursive: true, force: true })
+    await rm(join(dir, `${name}.md`), { force: true })
+}
+
+export async function installSkillFromMd(buffer: Uint8Array, filename: string, dir = SKILLS_DIR): Promise<string> {
+    const raw = new TextDecoder().decode(buffer)
+    const skill = parseSkillFile(raw)
+    if (!skill) throw new Error('SKILL.md is missing required name/description frontmatter')
+    await mkdir(dir, { recursive: true })
+    await writeFile(join(dir, filename), raw, 'utf-8')
+    return filename.replace(/\.md$/, '')
+}
+
+export async function saveSkillVersion(id: string, content: string, dir = SKILLS_DIR): Promise<void> {
+    const skill = parseSkillFile(content)
+    if (!skill) throw new Error('SKILL.md is missing required name/description frontmatter')
+    const skillDir = join(dir, id)
+    await mkdir(skillDir, { recursive: true })
+    await writeFile(join(skillDir, 'SKILL.md'), content, 'utf-8')
+}
+
+export async function readRawSkillMd(id: string, dir = SKILLS_DIR): Promise<string | null> {
+    try {
+        return await readFile(join(dir, id, 'SKILL.md'), 'utf-8')
+    } catch {}
+    try {
+        return await readFile(join(dir, `${id}.md`), 'utf-8')
+    } catch {}
+    return null
 }
 
 export async function installSkillFromZip(buffer: Uint8Array): Promise<string> {

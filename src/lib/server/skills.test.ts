@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdir, writeFile, mkdtemp, rm } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { parseSkillFile, collectMdFiles, listSkills } from './skills'
+import { parseSkillFile, collectMdFiles, listSkills, installSkillFromMd, saveSkillVersion, deleteSkill } from './skills'
 
 let testDir: string
 
@@ -165,6 +165,115 @@ Content for ${name}.`)
         const result = await listSkills(testDir)
         expect(result).toHaveLength(2)
         expect(result.map(s => s.name).sort()).toEqual(['skill-a', 'skill-b'])
+    })
+})
+
+describe('installSkillFromMd', () => {
+    it('installs a valid .md skill file', async () => {
+        const content = `---
+name: my-skill
+description: A test skill
+---
+Body content`
+        await installSkillFromMd(new TextEncoder().encode(content), 'my-skill.md', testDir)
+        const skills = await listSkills(testDir)
+        expect(skills).toHaveLength(1)
+        expect(skills[0].id).toBe('my-skill')
+        expect(skills[0].name).toBe('my-skill')
+    })
+
+    it('throws when SKILL.md is missing frontmatter', async () => {
+        const content = 'Just plain markdown'
+        await expect(
+            installSkillFromMd(new TextEncoder().encode(content), 'bad.md', testDir)
+        ).rejects.toThrow('missing required name/description frontmatter')
+    })
+})
+
+describe('saveSkillVersion', () => {
+    it('writes content to a new skill directory', async () => {
+        const content = `---
+name: my-skill
+description: A test skill
+---
+Updated body`
+        await saveSkillVersion('my-skill-v2', content, testDir)
+        const skills = await listSkills(testDir)
+        expect(skills).toHaveLength(1)
+        expect(skills[0].id).toBe('my-skill-v2')
+        expect(skills[0].content).toBe('Updated body')
+    })
+
+    it('throws when content has no valid frontmatter', async () => {
+        await expect(
+            saveSkillVersion('my-skill-v2', 'no frontmatter', testDir)
+        ).rejects.toThrow('missing required name/description frontmatter')
+    })
+})
+
+describe('listSkills with bare .md files', () => {
+    it('lists a bare .md file as a skill', async () => {
+        await writeFile(join(testDir, 'bare-skill.md'), `---
+name: bare-skill
+description: A bare skill
+---
+Content`)
+        const result = await listSkills(testDir)
+        expect(result).toHaveLength(1)
+        expect(result[0].id).toBe('bare-skill')
+        expect(result[0].name).toBe('bare-skill')
+    })
+
+    it('lists both directory and bare .md skills together', async () => {
+        await mkdir(join(testDir, 'dir-skill'))
+        await writeFile(join(testDir, 'dir-skill', 'SKILL.md'), `---
+name: dir-skill
+description: Directory skill
+---
+Content`)
+        await writeFile(join(testDir, 'bare-skill.md'), `---
+name: bare-skill
+description: Bare skill
+---
+Content`)
+        const result = await listSkills(testDir)
+        expect(result).toHaveLength(2)
+        expect(result.map(s => s.id).sort()).toEqual(['bare-skill', 'dir-skill'])
+    })
+
+    it('ignores .md files with invalid frontmatter', async () => {
+        await writeFile(join(testDir, 'invalid.md'), 'no frontmatter here')
+        const result = await listSkills(testDir)
+        expect(result).toEqual([])
+    })
+})
+
+describe('deleteSkill dual-path', () => {
+    it('deletes a directory-based skill', async () => {
+        await mkdir(join(testDir, 'my-skill'))
+        await writeFile(join(testDir, 'my-skill', 'SKILL.md'), `---
+name: my-skill
+description: Skill
+---
+Content`)
+        await deleteSkill('my-skill', testDir)
+        const result = await listSkills(testDir)
+        expect(result).toEqual([])
+    })
+
+    it('deletes a bare .md skill', async () => {
+        await writeFile(join(testDir, 'my-skill.md'), `---
+name: my-skill
+description: Skill
+---
+Content`)
+        await deleteSkill('my-skill', testDir)
+        const result = await listSkills(testDir)
+        expect(result).toEqual([])
+    })
+
+    it('does not throw when neither path exists', async () => {
+        await expect(deleteSkill('nonexistent', testDir)).resolves.not.toThrow()
     })
 })
 

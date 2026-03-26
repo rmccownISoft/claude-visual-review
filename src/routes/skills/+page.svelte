@@ -25,7 +25,7 @@
             if (!res.ok) {
                 uploadError = body.error ?? `Error ${res.status}`
             } else {
-                uploadSuccess = `Installed "${body.name}"`
+                uploadSuccess = `Installed "${body.id}"`
                 if (fileInput) fileInput.value = ''
                 // TODO: force list refresh, see if there's a more appropriate way to do this
                 await invalidateAll() 
@@ -87,13 +87,13 @@
     <section class="space-y-3">
         <h2 class="text-sm font-medium text-gray-700">Install from ZIP</h2>
         <p class="text-xs text-gray-500">
-            Upload a ZIP containing a skill directory with a <code>SKILL.md</code> at its root.
+            Upload a <code>.md</code> file (single skill), a <code>.skill</code> or <code>.zip</code> archive containing a skill directory with a <code>SKILL.md</code> at its root.
         </p>
         <div class="flex items-center gap-3">
             <input
                 bind:this={fileInput}
                 type="file"
-                accept=".zip"
+                accept=".skill,.zip,.md"
                 class="text-sm text-gray-600 file:mr-3 file:rounded file:border file:border-gray-300 file:bg-transparent file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-700 hover:file:bg-gray-50"
             />
             <button
