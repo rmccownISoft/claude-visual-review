@@ -146,9 +146,9 @@
     </div>
 
     <!-- Run config panel -->
-    <div class="border-b border-gray-200 bg-white flex-shrink-0">
+    <div class="bg-gray-50 border-b-2 border-gray-300 flex-shrink-0">
         <!-- Panel header — always visible -->
-        <div class="flex items-center justify-between px-4 py-2">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-gray-200">
             <button
                 onclick={() => configOpen = !configOpen}
                 class="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide hover:text-gray-700"
@@ -166,7 +166,7 @@
                 <button
                     onclick={saveAsVersion}
                     disabled={saving}
-                    class="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    class="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                 >
                     {saving ? 'Saving…' : saveLabel}
                 </button>
@@ -181,7 +181,7 @@
         </div>
 
         {#if configOpen}
-            <div class="px-4 pb-4 pt-1 space-y-4 max-h-80 overflow-y-auto border-t border-gray-100">
+            <div class="px-4 pb-4 pt-3 space-y-4 max-h-80 overflow-y-auto">
                 <RunConfigForm
                     bind:url
                     bind:headers
@@ -197,9 +197,14 @@
         {/if}
     </div>
 
-    <!-- Editor — takes all remaining space -->
-    <div class="flex-1 flex flex-col min-h-0 p-4 gap-2">
-        <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide flex-shrink-0" for="skill-editor">SKILL.md</label>
+    <!-- Editor -->
+    <div class="flex-1 flex flex-col min-h-0 bg-white p-4 gap-2">
+        <div class="flex-shrink-0 flex items-baseline justify-between">
+            <label class="text-sm font-semibold text-gray-800" for="skill-editor">
+                SKILL.md
+            </label>
+            <span class="text-xs text-gray-400">Edit the skill prompt and metadata</span>
+        </div>
         <textarea
             id="skill-editor"
             bind:value={content}
