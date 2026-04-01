@@ -34,7 +34,7 @@
 - Modify: `package.json` (via npm)
 - Create: `data/eval-configs/sales-performance-2025.yaml`
 
-- [ ] **Step 1: Install yaml**
+- [x] **Step 1: Install yaml**
 
 ```bash
 npm install yaml
@@ -42,7 +42,7 @@ npm install yaml
 
 Expected: `yaml` appears under `dependencies` in `package.json`.
 
-- [ ] **Step 2: Create sample eval config**
+- [x] **Step 2: Create sample eval config**
 
 Create `data/eval-configs/sales-performance-2025.yaml`:
 
@@ -72,7 +72,7 @@ criteria:
     value: 2
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add data/eval-configs/sales-performance-2025.yaml package.json package-lock.json
@@ -86,7 +86,7 @@ git commit -m "chore: add yaml dependency and sample eval config"
 **Files:**
 - Modify: `src/lib/types.ts`
 
-- [ ] **Step 1: Replace the contents of `src/lib/types.ts`**
+- [x] **Step 1: Replace the contents of `src/lib/types.ts`**
 
 ```typescript
 import type { UIMessage } from 'ai'
@@ -182,7 +182,7 @@ export type Skill = {
 }
 ```
 
-- [ ] **Step 2: Verify TypeScript compiles**
+- [x] **Step 2: Verify TypeScript compiles**
 
 ```bash
 npm run check
@@ -190,7 +190,7 @@ npm run check
 
 Expected: no type errors. Fix any that appear before proceeding.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/lib/types.ts
@@ -205,7 +205,7 @@ git commit -m "feat: extend types for eval criteria, experiment tracking, and ru
 - Create: `src/lib/server/eval-configs.ts`
 - Create: `src/lib/server/eval-configs.test.ts`
 
-- [ ] **Step 1: Write the failing tests first**
+- [x] **Step 1: Write the failing tests first**
 
 Create `src/lib/server/eval-configs.test.ts`:
 
@@ -277,7 +277,7 @@ describe('loadEvalConfig', () => {
 })
 ```
 
-- [ ] **Step 2: Run tests to confirm they fail**
+- [x] **Step 2: Run tests to confirm they fail**
 
 ```bash
 npm test -- eval-configs
@@ -285,7 +285,7 @@ npm test -- eval-configs
 
 Expected: fails with "Cannot find module './eval-configs'".
 
-- [ ] **Step 3: Implement the loader**
+- [x] **Step 3: Implement the loader**
 
 Create `src/lib/server/eval-configs.ts`:
 
@@ -344,7 +344,7 @@ export async function loadEvalConfig(id: string, dir = EVAL_CONFIGS_DIR): Promis
 }
 ```
 
-- [ ] **Step 4: Run tests to confirm they pass**
+- [x] **Step 4: Run tests to confirm they pass**
 
 ```bash
 npm test -- eval-configs
@@ -352,7 +352,7 @@ npm test -- eval-configs
 
 Expected: all 4 tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/server/eval-configs.ts src/lib/server/eval-configs.test.ts
