@@ -1,0 +1,23 @@
+id: sales-performance-2025
+description: "Sales performance summary for full year 2025, Store 1"
+prompt: "Show me sales performance for ISoft Lincoln for all of 2025"
+
+criteria:
+  - id: revenue-total
+    type: final_answer_contains
+    value: "$72,720.08"
+    blocking: true
+
+  - id: transaction-count
+    type: final_answer_contains
+    value: "26"
+    blocking: true
+
+  - id: step-budget
+    type: step_count_lte
+    value: 6
+
+  - id: schema-exploration
+    type: tool_call_count_lte
+    tool: explore_schema
+    value: 2
