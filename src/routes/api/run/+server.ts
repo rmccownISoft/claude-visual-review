@@ -131,7 +131,10 @@ export async function POST({ request }) {
 		        finalAnswer: lastTextStep?.text ?? '',
 		        totalInputTokens: totalUsage.inputTokens ?? 0,
 		        totalOutputTokens: totalUsage.outputTokens ?? 0,
-		        durationMs: Date.now() - startTime
+		        durationMs: Date.now() - startTime,
+		        toolCallsByName: {},
+		        skillsRead: [],
+		        errorCount: 0
 		    }
 		    // Don't save here — toUIMessageStream.onFinish saves with actual messages
 		}
@@ -150,6 +153,7 @@ export async function POST({ request }) {
 	                    config,
 	                    uiMessages: messages,
 	                    summary: runSummary,
+	                    skillSnapshots: {},
 	                    annotation: { rating: null, notes: '', savedAt: null }
 	                })
 	            }
