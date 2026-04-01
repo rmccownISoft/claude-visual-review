@@ -1,42 +1,47 @@
-# sv
+# Claude Visual Review
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SvelteKit tool for evaluating MCP agent runs — test prompts against configured MCP servers, compare skill variants, and score runs against eval criteria.
 
-## Creating a project
+## Dev Commands
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
+```bash
+pnpm dev          # start dev server
+pnpm build        # production build
+pnpm preview      # preview production build locally
 ```
 
-To recreate this project with the same configuration:
+## Type Checking
 
-```sh
-# recreate this project
-pnpm dlx sv create --template minimal --types ts --add prettier eslint tailwindcss="plugins:none" sveltekit-adapter="adapter:node" --install pnpm claude-visual-review
+```bash
+pnpm check        # one-time type check
+pnpm check:watch  # watch mode
 ```
 
-## Developing
+Run this after editing types or before committing to catch errors early.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Tests
 
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+```bash
+pnpm test                      # run all tests
+pnpm test -- eval-configs      # run only eval-configs.test.ts
+pnpm test -- evaluator         # run only evaluator.test.ts
+pnpm test -- server            # run all tests under src/lib/server/
 ```
 
-## Building
+The `--` passes the argument to Vitest as a file path filter. Any substring of the test file path works.
 
-To create a production version of your app:
+## Formatting / Lint
 
-```sh
-npm run build
+```bash
+pnpm format   # auto-format all files (prettier)
+pnpm lint     # check formatting + eslint (no auto-fix)
 ```
 
-You can preview the production build with `npm run preview`.
+## Data Directories
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```
+data/runs/           # saved run JSON files (one per run)
+data/eval-configs/   # eval criteria YAML files (one per test case)
+```
+
+Eval configs are YAML files that define a prompt and pass/fail criteria. See `docs/eval-framework.md` for the format.
