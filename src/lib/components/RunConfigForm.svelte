@@ -14,12 +14,38 @@
         selectedSkillIds = $bindable<string[]>([]),
         optionalSkills = [] as Skill[],
         storageKey = undefined as string | undefined,
+        testCaseId = $bindable(''),
+        experiment = $bindable(''),
+        label = $bindable('')
     } = $props()
 
     let availableTools = $state<string[]>([])
     let checkStatus = $state<{ ok: boolean; message: string } | null>(null)
     let checking = $state(false)
 
+    type EvalConfigSummary = { id: string; description: string; prompt: string }
+    let evalConfigs = $state<EvalConfigSummary[]>([])
+
+    async function loadEvalConfigs() {
+        try {
+            const res = await fetch('/api/eval-configs')
+            if (res.ok) evalConfigs = await res.json()
+        } catch {}
+    }
+
+    // Load eval configs once on mount
+    $effect(() => {
+        loadEvalConfigs()
+    })
+
+    function selectTestCase(id: string) {
+        testCaseId = id
+        if (id) {
+            const config = evalConfigs.find(c => c.id === id)
+            if (config) prompt = config.prompt
+        }
+        persistConfig()
+    }   
     // Load from localStorage on init (skipped server-side)
     // untrack: storageKey is a stable prop — intentional one-time read
     if (untrack(() => storageKey) && typeof localStorage !== 'undefined') {
@@ -33,6 +59,9 @@
                 setupPrompt = cfg.setupPrompt ?? ''
                 maxSteps = cfg.maxSteps ?? 20
                 disabledTools = cfg.disabledTools ?? []
+                testCaseId = cfg.testCaseId ?? ''
+                experiment = cfg.experiment ?? ''
+                label = cfg.label ?? ''
             }
         } catch {}
     }
@@ -40,7 +69,8 @@
     function persistConfig() {
         if (!storageKey || typeof localStorage === 'undefined') return
         localStorage.setItem(storageKey, JSON.stringify({
-            url, headers, prompt, setupPrompt, maxSteps, disabledTools
+            url, headers, prompt, setupPrompt, maxSteps, disabledTools,
+            testCaseId, experiment, label
         }))
     }
 
@@ -191,6 +221,50 @@
     </div>
 {/if}
 
+<!-- Test Case -->
+<div class="space-y-1">
+    <label class="text-sm font-medium text-gray-700" for="cfg-testcase">
+        Test Case <span class="font-normal text-gray-400">(optional)</span>
+    </label>
+    <select
+        id="cfg-testcase"
+        value={testCaseId}
+        onchange={(e) => selectTestCase((e.target as HTMLSelectElement).value)}
+        class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+    >
+        <option value="">— none —</option>
+        {#each evalConfigs as cfg (cfg.id)}
+            <option value={cfg.id}>{cfg.id} — {cfg.description}</option>
+        {/each}
+    </select>
+</div>
+
+<!-- Experiment + Label -->
+<div class="flex gap-2">
+    <div class="flex-1 space-y-1">
+        <label class="text-sm font-medium text-gray-700" for="cfg-experiment">Experiment</label>
+        <input
+            id="cfg-experiment"
+            bind:value={experiment}
+            oninput={persistConfig}
+            type="text"
+            placeholder="e.g. sales-perf ablation"
+            class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+    </div>
+    <div class="flex-1 space-y-1">
+        <label class="text-sm font-medium text-gray-700" for="cfg-label">Label</label>
+        <input
+            id="cfg-label"
+            bind:value={label}
+            oninput={persistConfig}
+            type="text"
+            placeholder="e.g. no skill"
+            class="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+    </div>
+</div>
+
 <!-- Setup Prompt -->
 <div class="space-y-1">
     <label class="text-sm font-medium text-gray-700" for="cfg-setup">
@@ -209,14 +283,22 @@
 
 <!-- Prompt -->
 <div class="space-y-1">
-    <label class="text-sm font-medium text-gray-700" for="cfg-prompt">Prompt</label>
+    <div class="flex items-center justify-between">
+        <label class="text-sm font-medium text-gray-700" for="cfg-prompt">Prompt</label>
+        {#if testCaseId}
+            <span class="text-xs text-gray-400">Locked to test case</span>
+        {/if}
+    </div>
     <textarea
         id="cfg-prompt"
         bind:value={prompt}
         oninput={persistConfig}
+        readonly={!!testCaseId}
         rows={6}
         placeholder="Enter the prompt for the agent..."
         class="w-full resize-y rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+        class:bg-gray-50={!!testCaseId}
+        class:text-gray-500={!!testCaseId}
     ></textarea>
 </div>
 

@@ -14,6 +14,9 @@
     let maxSteps = $state(20)
     let disabledTools = $state<string[]>([])
     let selectedSkillIds = $state<string[]>([])
+    let testCaseId = $state('')
+    let experiment = $state('')
+    let label = $state('')
 
     type StreamEvent = { type: 'text'; content: string } | { type: 'tool'; id: string; name: string; done: boolean }
     let running = $state(false)
@@ -38,7 +41,10 @@
             prompt,
             maxSteps,
             setupPrompt: setupPrompt || undefined,
-            disabledTools
+            disabledTools,
+            testCaseId: testCaseId || undefined,
+            experiment: experiment || undefined,
+            label: label || undefined
         }
 
         let res: Response
@@ -149,6 +155,9 @@
             bind:maxSteps
             bind:disabledTools
             bind:selectedSkillIds
+            bind:testCaseId
+            bind:experiment
+            bind:label
             optionalSkills={data.skills}
         />
 
