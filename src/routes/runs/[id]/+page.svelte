@@ -62,6 +62,63 @@
             </div>
         </div>
 
+        <!-- Eval Results -->
+        {#if data.run.evalResult}
+            {@const evalResult = data.run.evalResult}
+            <div>
+                <h3 class="text-sm font-semibold text-gray-700 mb-2">Eval Results</h3>
+                <div class="flex items-center gap-2 mb-2">
+                    <span
+                        class="inline-flex items-center rounded px-2 py-0.5 text-sm font-bold"
+                        class:bg-green-100={evalResult.passed}
+                        class:text-green-700={evalResult.passed}
+                        class:bg-red-100={!evalResult.passed}
+                        class:text-red-700={!evalResult.passed}
+                    >
+                        {evalResult.passed ? 'PASS' : 'FAIL'}
+                    </span>
+                    <span class="text-sm text-gray-500">Quality: {evalResult.qualityScore}%</span>
+                </div>
+                <div class="space-y-1">
+                    {#each evalResult.criteriaResults as cr (cr.id)}
+                        <div class="flex items-start gap-1.5 text-xs">
+                            <span class={cr.passed ? 'text-green-600' : 'text-red-500'}>
+                                {cr.passed ? '✓' : '✗'}
+                            </span>
+                            <span class="text-gray-700 flex-1">{cr.id}</span>
+                            {#if cr.actual !== undefined}
+                                <span class="text-gray-400 font-mono">{cr.actual}</span>
+                            {/if}
+                            {#if cr.blocking}
+                                <span class="text-gray-400 text-[10px] uppercase tracking-wide">blocking</span>
+                            {/if}
+                        </div>
+                    {/each}
+                </div>
+            </div>
+        {/if}
+
+        <!-- Tool Call Breakdown -->
+        {#if Object.keys(data.run.summary.toolCallsByName ?? {}).length > 0}
+            <div>
+                <h3 class="text-sm font-semibold text-gray-700 mb-1.5">Tool Calls</h3>
+                <div class="space-y-0.5">
+                    {#each Object.entries(data.run.summary.toolCallsByName) as [tool, count] (tool)}
+                        <div class="flex justify-between text-xs">
+                            <span class="font-mono text-gray-700">{tool}</span>
+                            <span class="text-gray-500">{count}</span>
+                        </div>
+                    {/each}
+                    {#if (data.run.summary.errorCount ?? 0) > 0}
+                        <div class="flex justify-between text-xs text-red-500 pt-0.5 border-t border-gray-100 mt-0.5">
+                            <span>errors</span>
+                            <span>{data.run.summary.errorCount}</span>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+        {/if}
+
         <div class="flex flex-1 flex-col gap-1">
             <label for="notes" class="text-sm font-semibold text-gray-700">Notes</label>
             <textarea
