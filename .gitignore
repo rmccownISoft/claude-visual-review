@@ -32,4 +32,4 @@ data/runs/*.json
 data/skills/*
 !data/skills/.gitkeep
 
-docs/superpowers/
+docs/superpowers/*
