@@ -31,3 +31,5 @@ data/runs/*.json
 # Installed eval skills (keep folder, ignore contents)
 data/skills/*
 !data/skills/.gitkeep
+
+docs/superpowers/
