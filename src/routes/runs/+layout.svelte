@@ -21,19 +21,46 @@
                     class:border-l-2={active}
                     class:border-l-blue-500={active}
                 >
-                    <div class="font-mono text-xs text-gray-800 truncate">{run.id}</div>
+                    <!-- Experiment + Label (shown instead of run id when set) -->
+                    {#if run.config.experiment || run.config.label}
+                        <div class="text-xs font-medium text-gray-800 truncate">
+                            {#if run.config.experiment}<span class="text-gray-500">{run.config.experiment}</span>{/if}
+                            {#if run.config.experiment && run.config.label} · {/if}
+                            {#if run.config.label}{run.config.label}{/if}
+                        </div>
+                    {:else}
+                        <div class="font-mono text-xs text-gray-800 truncate">{run.id}</div>
+                    {/if}
+
                     <div class="text-xs text-gray-400 mt-0.5">
                         {new Date(run.timestamp).toLocaleString()}
                     </div>
-                    <div class="run-list-detail">
+
+                    <div class="mt-1 space-y-0.5">
                         <div class="text-xs text-gray-600 truncate">
                             <span class="font-semibold">Prompt:</span> {run.config.prompt}
                         </div>
                         <div class="text-xs text-gray-600">
-                            <span class="font-semibold">Tools:</span> {run.summary.toolCallCount} • <span class="font-semibold">Skills:</span> {run.summary.skillLoadCount}
+                            <span class="font-semibold">Steps:</span> {run.summary.stepCount}
+                            · <span class="font-semibold">Tools:</span> {run.summary.toolCallCount}
                         </div>
                     </div>
-                    {#if run.annotation.rating}
+
+                    <!-- Eval result badge -->
+                    {#if run.evalResult}
+                        <div class="mt-1.5 flex items-center gap-1.5">
+                            <span
+                                class="inline-flex items-center rounded px-1.5 py-0.5 text-xs font-semibold"
+                                class:bg-green-100={run.evalResult.passed}
+                                class:text-green-700={run.evalResult.passed}
+                                class:bg-red-100={!run.evalResult.passed}
+                                class:text-red-700={!run.evalResult.passed}
+                            >
+                                {run.evalResult.passed ? 'PASS' : 'FAIL'}
+                            </span>
+                            <span class="text-xs text-gray-500">quality: {run.evalResult.qualityScore}%</span>
+                        </div>
+                    {:else if run.annotation.rating}
                         <span class="text-xs {run.annotation.rating === 'good' ? 'text-green-600' : 'text-red-500'}">
                             {run.annotation.rating === 'good' ? '👍' : '👎'}
                         </span>
@@ -51,8 +78,3 @@
     </div>
 </div>
 
-<style>
-    .run-list-detail {
-        margin-top: 0.25rem;
-    }
-</style>

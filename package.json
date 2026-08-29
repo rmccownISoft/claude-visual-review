@@ -43,6 +43,7 @@
 	"dependencies": {
 		"@ai-sdk/anthropic": "^3.0.50",
 		"@ai-sdk/mcp": "^1.0.22",
-		"fflate": "^0.8.2"
+		"fflate": "^0.8.2",
+		"yaml": "^2.8.3"
 	}
 }

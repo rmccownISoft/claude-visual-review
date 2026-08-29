@@ -1,7 +1,7 @@
 # Claude Instructions
 
 ## Project
-SvelteKit + Svelte 5 + Tailwind 4 + AI SDK v5 tool for evaluating MCP agent runs.
+SvelteKit + Svelte 5 + Tailwind 4 + AI SDK v6 tool for evaluating MCP agent runs. Uses pnpm.
 
 ## REQUIRED: Before suggesting Svelte/SvelteKit code or fixes
 Always call `mcp__plugin_svelte_svelte__get-documentation` before suggesting any Svelte or SvelteKit API, import, or fix. Never rely on training data alone — it frequently references deprecated APIs.
