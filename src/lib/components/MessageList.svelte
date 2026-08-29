@@ -33,7 +33,9 @@
     <div class="flex flex-wrap gap-x-4 gap-y-0.5 rounded border border-gray-100 bg-gray-50 px-4 py-2 text-xs text-gray-500">
         <span>{summary.stepCount} steps</span>
         <span>{summary.toolCallCount} tool calls</span>
-        <span>{summary.skillLoadCount} skills loaded</span>
+        {#if (summary.skillsRead?.length ?? 0) > 0 || config.skills.length > 0}
+            <span>{summary.skillsRead?.length ?? 0}/{config.skills.length} skill loads</span>
+        {/if}
         <span>{summary.totalInputTokens.toLocaleString()} in / {summary.totalOutputTokens.toLocaleString()} out tokens</span>
         <span>{formatDuration(summary.durationMs)}</span>
         <span class="capitalize">{summary.finishReason}</span>
@@ -74,6 +76,22 @@
                         {#if 'output' in part && part.output != null}
                             <div class="border-t border-gray-200 bg-gray-50 p-3">
                                 <pre class="overflow-x-auto text-gray-600">{typeof part.output === 'string' ? part.output : prettyJson(part.output)}</pre>
+                            </div>
+                        {/if}
+                    </div>
+                {:else if (part as { type: string }).type === 'tool-loadSkill'}
+                    {@const p = part as unknown as { input: { skillName: string }; output: string; state: string }}
+                    {@const failed = p.output?.includes('not found')}
+                    <div class="mt-2 overflow-hidden rounded border font-mono text-xs" class:border-amber-200={failed} class:border-gray-200={!failed}>
+                        <div class="flex items-center gap-2 border-b px-3 py-1.5" class:border-amber-200={failed} class:bg-amber-50={failed} class:border-gray-200={!failed} class:bg-gray-50={!failed}>
+                            <span class="rounded px-1 py-0.5 text-[10px] font-bold uppercase tracking-wider" class:bg-amber-200={failed} class:text-amber-700={failed} class:bg-purple-200={!failed} class:text-purple-700={!failed}>skill</span>
+                            <span class="font-semibold">loadSkill</span>
+                            <span class="text-gray-500">{p.input?.skillName}</span>
+                            {#if failed}<span class="text-amber-600">not found</span>{/if}
+                        </div>
+                        {#if p.output}
+                            <div class="border-t p-3" class:border-amber-200={failed} class:bg-amber-50={failed} class:border-gray-200={!failed} class:bg-gray-50={!failed}>
+                                <pre class="overflow-x-auto text-gray-600">{p.output}</pre>
                             </div>
                         {/if}
                     </div>

@@ -103,18 +103,23 @@ export async function POST({ request }) {
     	instructions: buildInstructions(config.skills, config.setupPrompt),
 		tools: {
 			...filteredTools,
-			loadSkill: tool({
-				description: 'Load the full instructions for a named skill. Call this when a task matches a skill description.',
-				inputSchema: z.object({
-					skillName: z.string().describe('The exact name of the skill to load')
-				}),
-				execute: async ({ skillName }) => {
-					skillLoadCount++
-					skillsRead.push(skillName)
-					return skillMap.get(skillName)
-						?? `Skill "${skillName}" not found. Available: ${[...skillMap.keys()].join(', ')}`
-				}
-			})
+			...(config.skills.length > 0 ? {
+				loadSkill: tool({
+					description: 'Load the full instructions for a named skill. Call this when a task matches a skill description.',
+					inputSchema: z.object({
+						skillName: z.string().describe('The exact name of the skill to load')
+					}),
+					execute: async ({ skillName }) => {
+						skillsRead.push(skillName)
+						const content = skillMap.get(skillName)
+						if (content) {
+							skillLoadCount++
+							return content
+						}
+						return `Skill "${skillName}" not found. Available: ${[...skillMap.keys()].join(', ')}`
+					}
+				})
+			} : {})
 		},
     	stopWhen: stepCountIs(config.maxSteps ?? 20),
 		onStepFinish: ({ toolCalls, toolResults }) => {

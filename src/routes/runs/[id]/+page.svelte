@@ -99,7 +99,7 @@
         {/if}
 
         <!-- Tool Call Breakdown -->
-        {#if Object.keys(data.run.summary.toolCallsByName ?? {}).length > 0}
+        {#if Object.keys(data.run.summary.toolCallsByName ?? {}).length > 0 || (data.run.summary.skillsRead?.length ?? 0) > 0}
             <div>
                 <h3 class="text-sm font-semibold text-gray-700 mb-1.5">Tool Calls</h3>
                 <div class="space-y-0.5">
@@ -107,6 +107,13 @@
                         <div class="flex justify-between text-xs">
                             <span class="font-mono text-gray-700">{tool}</span>
                             <span class="text-gray-500">{count}</span>
+                        </div>
+                    {/each}
+                    {#each data.run.summary.skillsRead ?? [] as skillName (skillName)}
+                        {@const found = skillName in data.run.skillSnapshots}
+                        <div class="flex justify-between text-xs" class:text-amber-600={!found} class:text-purple-700={found}>
+                            <span class="font-mono">loadSkill({skillName})</span>
+                            <span>{found ? '✓' : '✗'}</span>
                         </div>
                     {/each}
                     {#if (data.run.summary.errorCount ?? 0) > 0}
